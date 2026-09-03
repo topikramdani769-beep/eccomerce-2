@@ -12,6 +12,11 @@ class OrderController extends Controller
 {
     public function checkout(Request $request)
     {
+        $request->validate([
+            'payment_method_id' => 'required|exists:payment_methods,id',
+            'shipping_address'  => 'required|string',
+        ]);
+
         $user = $request->user();
         $carts = Cart::with('product')->where('user_id', $user->id)->get();
 
@@ -19,20 +24,29 @@ class OrderController extends Controller
             return response()->json(['message' => 'Keranjang belanja kosong'], 400);
         }
 
-        // Hitung Total Belanjaan
-        $total = $carts->sum(function ($item) {
-            return $item->product->price * $item->quantity;
-        });
+        // Check ketersediaan stok sebelum checkout
+        foreach ($carts as $item) {
+            if ($item->product->stock < $item->quantity) {
+                return response()->json([
+                    'message' => "Stok produk {$item->product->name} tidak mencukupi"
+                ], 400);
+            }
+        }
 
-        // Buat Order Baru
+        // Hitung Total Belanja
+        $total = $carts->sum(fn($item) => $item->product->price * $item->quantity);
+
+        // 1. Buat Order
         $order = Order::create([
-            'user_id'      => $user->id,
-            'order_number' => 'ORD-' . strtoupper(Str::random(10)),
-            'total_amount' => $total,
-            'status'       => 'pending'
+            'user_id'           => $user->id,
+            'payment_method_id' => $request->payment_method_id,
+            'shipping_address'  => $request->shipping_address,
+            'order_number'      => 'ORD-' . strtoupper(Str::random(10)),
+            'total_amount'      => $total,
+            'status'            => 'pending'
         ]);
 
-        // Pindahkan item dari Cart ke OrderItem
+        // 2. Pindahkan item keranjang ke OrderItem & Potong Stok
         foreach ($carts as $cart) {
             OrderItem::create([
                 'order_id'   => $order->id,
@@ -40,23 +54,38 @@ class OrderController extends Controller
                 'quantity'   => $cart->quantity,
                 'price'      => $cart->product->price
             ]);
+
+            // Potong Stok Produk
+            $cart->product->decrement('stock', $cart->quantity);
         }
 
-        // Bersihkan keranjang user
+        // 3. Kosongkan keranjang user
         Cart::where('user_id', $user->id)->delete();
 
         return response()->json([
             'message' => 'Checkout berhasil dibuat',
-            'order'   => $order->load('items.product')
+            'order'   => $order->load(['items.product', 'paymentMethod'])
         ], 201);
     }
 
+    // Riwayat Order Pengguna
     public function index(Request $request)
     {
-        $orders = Order::with('items.product')
+        $orders = Order::with(['items.product', 'paymentMethod'])
             ->where('user_id', $request->user()->id)
+            ->latest()
             ->get();
 
         return response()->json($orders, 200);
+    }
+
+    // Detail Order Spesifik
+    public function show(Request $request, Order $order)
+    {
+        if ($order->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        return response()->json($order->load(['items.product', 'paymentMethod']), 200);
     }
 }

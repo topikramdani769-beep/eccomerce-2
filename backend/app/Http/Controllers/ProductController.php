@@ -9,22 +9,21 @@ class ProductController extends Controller
 {
     public function index()
     {
-        // Mengambil seluruh produk beserta relasi kategorinya
         $products = Product::with('category')->get();
         return response()->json($products, 200);
     }
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'name'        => 'required|string|max:255',
-            'price'       => 'required|numeric',
-            'stock'       => 'required|integer',
+            'price'       => 'required|numeric|min:0',
+            'stock'       => 'required|integer|min:0',
             'image'       => 'nullable|string'
         ]);
 
-        $product = Product::create($request->all());
+        $product = Product::create($validated);
 
         return response()->json([
             'message' => 'Produk berhasil ditambahkan',
@@ -39,15 +38,15 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        $request->validate([
+        $validated = $request->validate([
             'category_id' => 'sometimes|exists:categories,id',
             'name'        => 'sometimes|string|max:255',
-            'price'       => 'sometimes|numeric',
-            'stock'       => 'sometimes|integer',
+            'price'       => 'sometimes|numeric|min:0',
+            'stock'       => 'sometimes|integer|min:0',
             'image'       => 'nullable|string'
         ]);
 
-        $product->update($request->all());
+        $product->update($validated);
 
         return response()->json([
             'message' => 'Produk berhasil diperbarui',
