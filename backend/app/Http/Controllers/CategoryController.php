@@ -4,61 +4,59 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Str; // 1. Import Str di sini
 
 class CategoryController extends Controller
 {
-    // 1. Lihat Semua Kategori
     public function index()
     {
         return response()->json(Category::all(), 200);
     }
 
-    // 2. Tambah Kategori Baru
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255'
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:categories,name',
         ]);
 
+        // 2. Tambahkan pembuatan slug otomatis
         $category = Category::create([
-            'name' => $request->name,
-            'slug' => Str::slug($request->name)
+            'name' => $validated['name'],
+            'slug' => Str::slug($validated['name']),
         ]);
 
         return response()->json([
-            'message'  => 'Kategori berhasil ditambahkan',
+            'message' => 'Kategori berhasil ditambahkan',
             'category' => $category
         ], 201);
     }
 
-    // 3. Lihat Detail Single Kategori
-    public function show(Category $category)
-    {
-        return response()->json($category, 200);
-    }
-
-    // 4. Edit / Update Kategori
     public function update(Request $request, Category $category)
     {
-        $request->validate([
-            'name' => 'required|string|max:255'
+        $validated = $request->validate([
+            'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
         ]);
 
+        // 3. Update nama beserta slug-nya
         $category->update([
-            'name' => $request->name,
-            'slug' => Str::slug($request->name)
+            'name' => $validated['name'],
+            'slug' => Str::slug($validated['name']),
         ]);
 
         return response()->json([
-            'message'  => 'Kategori berhasil diperbarui',
+            'message' => 'Kategori berhasil diperbarui',
             'category' => $category
         ], 200);
     }
 
-    // 5. Hapus Kategori
     public function destroy(Category $category)
     {
+        if ($category->products()->count() > 0) {
+            return response()->json([
+                'message' => 'Gagal menghapus! Masih ada produk yang menggunakan kategori ini.'
+            ], 422);
+        }
+
         $category->delete();
 
         return response()->json([

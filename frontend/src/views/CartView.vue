@@ -1,83 +1,85 @@
 <template>
-  <div class="container">
-    <h2 class="page-title">YOUR CART</h2>
+  <div class="cart-page">
+    <div class="container">
+      <h2 class="page-title">YOUR CART</h2>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="state-msg">
-      <span class="spinner"></span>
-      <p>Loading your cart...</p>
-    </div>
-
-    <!-- Empty State -->
-    <div v-else-if="cartItems.length === 0" class="empty-cart">
-      <p>Your cart is currently empty.</p>
-      <router-link to="/" class="btn-bape mt-4">Explore Collection</router-link>
-    </div>
-
-    <!-- Cart Items & Summary -->
-    <div v-else class="cart-layout">
-      <!-- Item List Section -->
-      <div class="cart-items">
-        <div v-for="item in cartItems" :key="item.id" class="cart-item">
-          <div class="item-details">
-            <img :src="item.product?.image" :alt="item.product?.name" class="product-img" />
-            <div class="item-info">
-              <span class="category-badge">{{ item.product?.category?.name || 'Streetwear' }}</span>
-              <h3 class="product-name">{{ item.product?.name }}</h3>
-              <span class="unit-price">Rp {{ Number(item.product?.price).toLocaleString('id-ID') }}</span>
-            </div>
-          </div>
-
-          <!-- Quantity Controls & Actions -->
-          <div class="item-actions">
-            <div class="qty-control">
-              <button 
-                @click="updateQuantity(item.id, item.quantity - 1)" 
-                :disabled="item.quantity <= 1 || processingId === item.id"
-                class="btn-qty"
-              >-</button>
-              <span class="qty-number">{{ item.quantity }}</span>
-              <button 
-                @click="updateQuantity(item.id, item.quantity + 1)" 
-                :disabled="processingId === item.id"
-                class="btn-qty"
-              >+</button>
-            </div>
-
-            <span class="subtotal">
-              Rp {{ Number(item.product?.price * item.quantity).toLocaleString('id-ID') }}
-            </span>
-
-            <button 
-              @click="removeItem(item.id)" 
-              :disabled="processingId === item.id"
-              class="btn-remove" 
-              title="Remove Item"
-            >✕</button>
-          </div>
-        </div>
+      <!-- Loading State -->
+      <div v-if="loading" class="state-msg">
+        <span class="spinner"></span>
+        <p>LOADING YOUR CART...</p>
       </div>
 
-      <!-- Order Summary Card -->
-      <div class="cart-summary">
-        <h3 class="summary-title">SUMMARY</h3>
-        <div class="summary-row">
-          <span>Items Total</span>
-          <span>Rp {{ totalPrice.toLocaleString('id-ID') }}</span>
-        </div>
-        <div class="summary-row">
-          <span>Shipping Fee</span>
-          <span class="text-gold">FREE</span>
-        </div>
-        <hr class="divider" />
-        <div class="summary-row total-row">
-          <span>Total</span>
-          <span class="total-price">Rp {{ totalPrice.toLocaleString('id-ID') }}</span>
+      <!-- Empty State -->
+      <div v-else-if="cartItems.length === 0" class="empty-cart">
+        <p>YOUR CART IS CURRENTLY EMPTY.</p>
+        <router-link to="/" class="btn-shop mt-4">EXPLORE COLLECTION</router-link>
+      </div>
+
+      <!-- Cart Items & Summary -->
+      <div v-else class="cart-layout">
+        <!-- Item List Section -->
+        <div class="cart-items">
+          <div v-for="item in cartItems" :key="item.id" class="cart-item">
+            <div class="item-details">
+              <img :src="item.product?.image" :alt="item.product?.name" class="product-img" />
+              <div class="item-info">
+                <span class="category-badge">{{ item.product?.category?.name || 'Streetwear' }}</span>
+                <h3 class="product-name">{{ item.product?.name }}</h3>
+                <span class="unit-price">Rp {{ Number(item.product?.price).toLocaleString('id-ID') }}</span>
+              </div>
+            </div>
+
+            <!-- Quantity Controls & Actions -->
+            <div class="item-actions">
+              <div class="qty-control">
+                <button 
+                  @click="updateQuantity(item.id, item.quantity - 1)" 
+                  :disabled="item.quantity <= 1 || processingId === item.id"
+                  class="btn-qty"
+                >-</button>
+                <span class="qty-number">{{ item.quantity }}</span>
+                <button 
+                  @click="updateQuantity(item.id, item.quantity + 1)" 
+                  :disabled="processingId === item.id"
+                  class="btn-qty"
+                >+</button>
+              </div>
+
+              <span class="subtotal">
+                Rp {{ Number(item.product?.price * item.quantity).toLocaleString('id-ID') }}
+              </span>
+
+              <button 
+                @click="removeItem(item.id)" 
+                :disabled="processingId === item.id"
+                class="btn-remove" 
+                title="Remove Item"
+              >✕</button>
+            </div>
+          </div>
         </div>
 
-        <router-link to="/checkout" class="btn-bape btn-checkout">
-          PROCEED TO CHECKOUT
-        </router-link>
+        <!-- Order Summary Card -->
+        <div class="cart-summary">
+          <h3 class="summary-title">SUMMARY</h3>
+          <div class="summary-row">
+            <span>Items Total</span>
+            <span>Rp {{ totalPrice.toLocaleString('id-ID') }}</span>
+          </div>
+          <div class="summary-row">
+            <span>Shipping Fee</span>
+            <span class="text-gold">FREE</span>
+          </div>
+          <hr class="divider" />
+          <div class="summary-row total-row">
+            <span>Total</span>
+            <span class="total-price">Rp {{ totalPrice.toLocaleString('id-ID') }}</span>
+          </div>
+
+          <router-link to="/checkout" class="btn-checkout">
+            PROCEED TO CHECKOUT
+          </router-link>
+        </div>
       </div>
     </div>
   </div>
@@ -142,23 +144,62 @@ onMounted(() => {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
+
+.cart-page {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: #e2e1dc;
+  min-height: calc(100vh - 70px);
+  padding: 40px 20px;
+  color: #111111;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 .page-title {
+  font-family: 'Oswald', sans-serif;
   font-size: 28px;
-  letter-spacing: 3px;
+  letter-spacing: 2.5px;
   margin-bottom: 30px;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 10px;
+  border-bottom: 2px solid #111111;
+  padding-bottom: 12px;
 }
 
 .state-msg, .empty-cart {
   text-align: center;
-  padding: 60px 0;
-  color: var(--text-muted);
+  padding: 80px 20px;
+  background: #f4f3ef;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
 
 .empty-cart p {
+  font-family: 'Oswald', sans-serif;
   font-size: 16px;
-  margin-bottom: 20px;
+  letter-spacing: 1.5px;
+  color: #555;
+  margin-bottom: 24px;
+}
+
+.btn-shop {
+  display: inline-block;
+  font-family: 'Oswald', sans-serif;
+  background: #111111;
+  color: #ffffff;
+  padding: 12px 28px;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-shop:hover {
+  background: #c8b282;
+  color: #111111;
 }
 
 .cart-layout {
@@ -175,15 +216,16 @@ onMounted(() => {
 
 /* Cart Items */
 .cart-item {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background-color: #f4f3ef;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   padding: 20px;
-  margin-bottom: 15px;
+  margin-bottom: 16px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 20px;
   justify-content: space-between;
-  border-radius: 4px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 @media (min-width: 600px) {
@@ -196,34 +238,36 @@ onMounted(() => {
 .item-details {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 16px;
 }
 
 .product-img {
-  width: 80px;
-  height: 80px;
+  width: 84px;
+  height: 84px;
   object-fit: cover;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background-color: #e2e1dc;
+  border-radius: 8px;
 }
 
 .category-badge {
-  font-size: 10px;
-  color: var(--accent-gold);
-  letter-spacing: 1px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  color: #c8b282;
+  letter-spacing: 1.5px;
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .product-name {
   font-size: 16px;
-  font-weight: 700;
-  margin: 2px 0;
+  font-weight: 800;
+  margin: 4px 0;
 }
 
 .unit-price {
-  font-size: 12px;
-  color: var(--text-muted);
+  font-size: 13px;
+  color: #666;
+  font-weight: 600;
 }
 
 .item-actions {
@@ -237,18 +281,20 @@ onMounted(() => {
 .qty-control {
   display: flex;
   align-items: center;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-secondary);
+  background-color: #e7e6e0;
+  border-radius: 6px;
+  padding: 2px;
 }
 
 .btn-qty {
   background: none;
   border: none;
-  color: var(--text-main);
-  width: 30px;
-  height: 30px;
+  color: #111;
+  width: 32px;
+  height: 32px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 800;
+  font-size: 14px;
 }
 
 .btn-qty:disabled {
@@ -258,42 +304,44 @@ onMounted(() => {
 
 .qty-number {
   padding: 0 10px;
+  font-weight: 800;
   font-size: 13px;
-  font-weight: bold;
 }
 
 .subtotal {
-  font-weight: 700;
-  font-size: 14px;
-  min-width: 100px;
+  font-weight: 800;
+  font-size: 15px;
+  min-width: 110px;
   text-align: right;
 }
 
 .btn-remove {
   background: none;
   border: none;
-  color: #ff4d4d;
+  color: #dc2626;
   font-size: 16px;
   cursor: pointer;
-  padding: 5px;
+  padding: 6px;
   transition: opacity 0.2s;
 }
 
 .btn-remove:hover {
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 /* Order Summary */
 .cart-summary {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
-  padding: 25px;
+  background-color: #f4f3ef;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 28px;
   height: fit-content;
-  border-radius: 4px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .summary-title {
-  font-size: 18px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 20px;
   letter-spacing: 2px;
   margin-bottom: 20px;
 }
@@ -302,44 +350,59 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   font-size: 13px;
-  margin-bottom: 12px;
-  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 14px;
+  color: #555;
 }
 
 .divider {
   border: none;
-  border-top: 1px solid var(--border-color);
-  margin: 15px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  margin: 18px 0;
 }
 
 .total-row {
   font-size: 16px;
-  font-weight: 700;
-  color: var(--text-main);
-  margin-bottom: 20px;
+  font-weight: 800;
+  color: #111;
+  margin-bottom: 24px;
 }
 
 .total-price, .text-gold {
-  color: var(--accent-gold);
+  color: #8f794b;
+  font-weight: 800;
 }
 
 .btn-checkout {
   display: block;
   width: 100%;
   text-align: center;
-  padding: 12px 0;
-  margin-top: 10px;
+  background: #111111;
+  color: #ffffff;
+  padding: 14px 0;
+  font-family: 'Oswald', sans-serif;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+  box-sizing: border-box;
+}
+
+.btn-checkout:hover {
+  background: #c8b282;
+  color: #111111;
 }
 
 .spinner {
   display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border-color);
-  border-top-color: var(--accent-gold);
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #c8b282;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 @keyframes spin {
