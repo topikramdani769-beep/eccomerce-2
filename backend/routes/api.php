@@ -9,6 +9,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\PaymentMethodController;
+use App\Http\Controllers\AdminStatsController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 
 // Public Routes
@@ -44,24 +45,28 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders/{order}', [OrderController::class, 'show']);
 
     // Admin Only Routes
-Route::middleware('admin')->prefix('admin')->group(function () {
-    // Categories
-    Route::post('/categories', [CategoryController::class, 'store']);
-    Route::put('/categories/{id}', [CategoryController::class, 'update']);
-    Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
+    Route::middleware('admin')->prefix('admin')->group(function () {
+        // Stats Dashboard
+        Route::get('/stats', [AdminStatsController::class, 'stats']);
 
-    // Products (UBAH {product} MENJADI {id})
-    Route::post('/products', [ProductController::class, 'store']);
-    Route::put('/products/{id}', [ProductController::class, 'update']);
-    Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+        // Categories Management
+        Route::post('/categories', [CategoryController::class, 'store']);
+        Route::put('/categories/{category}', [CategoryController::class, 'update']);
+        Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
 
-    // Payment Methods
-    Route::post('/payment-methods', [PaymentMethodController::class, 'store']);
-    Route::put('/payment-methods/{id}', [PaymentMethodController::class, 'update']);
-    Route::delete('/payment-methods/{id}', [PaymentMethodController::class, 'destroy']);
+        // Products Management (Termasuk Support FormData Multipart)
+        Route::post('/products', [ProductController::class, 'store']);
+        Route::put('/products/{product}', [ProductController::class, 'update']);
+        Route::post('/products/{product}', [ProductController::class, 'update']);
+        Route::delete('/products/{product}', [ProductController::class, 'destroy']);
 
-    // Order Management
-    Route::get('/orders', [AdminOrderController::class, 'index']);
-    Route::put('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
-});
+        // Payment Methods Management
+        Route::post('/payment-methods', [PaymentMethodController::class, 'store']);
+        Route::put('/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'update']);
+        Route::delete('/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'destroy']);
+
+        // Order Management
+        Route::get('/orders', [AdminOrderController::class, 'index']);
+        Route::put('/orders/{id}/status', [AdminOrderController::class, 'updateStatus']);
+    });
 });
