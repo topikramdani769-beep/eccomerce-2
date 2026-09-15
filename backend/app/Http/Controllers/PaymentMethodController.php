@@ -9,7 +9,8 @@ class PaymentMethodController extends Controller
 {
     public function index()
     {
-        $methods = PaymentMethod::where('is_active', true)->get();
+        // Mengambil semua payment method tanpa memfilter status is_active
+        $methods = PaymentMethod::all();
         return response()->json($methods, 200);
     }
 
@@ -23,7 +24,13 @@ class PaymentMethodController extends Controller
             'instructions'   => 'nullable|string',
         ]);
 
-        $paymentMethod = PaymentMethod::create($request->all());
+        $data = $request->all();
+        // Set default is_active ke true jika tidak diisi
+        if (!isset($data['is_active'])) {
+            $data['is_active'] = true;
+        }
+
+        $paymentMethod = PaymentMethod::create($data);
 
         return response()->json([
             'message'        => 'Metode pembayaran berhasil ditambahkan',

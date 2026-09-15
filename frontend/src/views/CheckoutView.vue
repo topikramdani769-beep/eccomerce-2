@@ -27,16 +27,27 @@
 
           <div class="section-box mt-6">
             <h3 class="section-title">PAYMENT METHOD</h3>
-            <div class="payment-options mt-4">
+            
+            <div v-if="paymentMethods.length === 0" class="empty-payment-msg mt-4">
+              <p>Tidak ada metode pembayaran yang tersedia.</p>
+            </div>
+
+            <div v-else class="payment-options mt-4">
               <label 
                 v-for="method in paymentMethods" 
                 :key="method.id" 
                 :class="['payment-card', { active: selectedPayment === method.id }]"
               >
-                <input type="radio" :value="method.id" v-model="selectedPayment" required />
+                <input 
+                  type="radio" 
+                  :value="method.id" 
+                  v-model="selectedPayment" 
+                  name="payment_method"
+                  required 
+                />
                 <div class="payment-info">
                   <strong>{{ method.name }}</strong>
-                  <small>{{ method.account_number }} (a.n {{ method.account_holder }})</small>
+                  <small v-if="method.account_number">{{ method.account_number }} (a.n {{ method.account_holder }})</small>
                 </div>
               </label>
             </div>
@@ -65,7 +76,7 @@
             <span class="total-price">Rp {{ totalPrice.toLocaleString('id-ID') }}</span>
           </div>
 
-          <button type="submit" class="btn-submit btn-place-order" :disabled="submitting">
+          <button type="submit" class="btn-submit btn-place-order" :disabled="submitting || paymentMethods.length === 0">
             <span v-if="!submitting">PLACE ORDER</span>
             <span v-else class="loader-container">
               <span class="spinner-sm"></span> PROCESSING...
@@ -91,13 +102,19 @@ const submitting = ref(false);
 const router = useRouter();
 
 const fetchData = async () => {
+  loading.value = true;
   try {
     const [cartRes, paymentRes] = await Promise.all([
       api.get('/cart'),
       api.get('/payment-methods')
     ]);
-    cartItems.value = cartRes.data;
-    paymentMethods.value = paymentRes.data;
+
+    // Menangani format array langsung (res.data) maupun yang terbungkus (res.data.data)
+    const rawCart = cartRes.data?.data || cartRes.data || [];
+    const rawPayment = paymentRes.data?.data || paymentRes.data || [];
+
+    cartItems.value = Array.isArray(rawCart) ? rawCart : [];
+    paymentMethods.value = Array.isArray(rawPayment) ? rawPayment : [];
 
     if (paymentMethods.value.length > 0) {
       selectedPayment.value = paymentMethods.value[0].id;
@@ -118,10 +135,15 @@ const handleCheckout = async () => {
     return alert('Keranjang belanja kamu kosong!');
   }
 
+  if (!selectedPayment.value) {
+    return alert('Silakan pilih metode pembayaran terlebih dahulu!');
+  }
+
   submitting.value = true;
   try {
     await api.post('/orders', {
       shipping_address: address.value,
+      address: address.value,
       payment_method_id: selectedPayment.value
     });
     alert('Pesanan berhasil dibuat!');
@@ -224,6 +246,16 @@ onMounted(() => {
   background: #ffffff;
   border-color: #e62129;
   box-shadow: 0 0 0 3px rgba(230, 33, 41, 0.1);
+}
+
+.empty-payment-msg {
+  padding: 16px;
+  background: #fff0f0;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  color: #d32f2f;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .payment-card {

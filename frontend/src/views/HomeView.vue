@@ -12,7 +12,6 @@
         class="hero-video"
         @loadedmetadata="playVideo"
       >
-        <!-- Menggunakan File Video Lokal dari Folder public/ -->
         <source src="/hero-video.mp4" type="video/mp4" />
         Browser Anda tidak mendukung pemutaran video.
       </video>
@@ -44,7 +43,7 @@
           @click="openModal(product)"
         >
           <div class="image-wrapper">
-            <img :src="product.image" :alt="product.name" />
+            <img :src="getImageUrl(product.image)" :alt="product.name" />
             <span v-if="product.stock <= 0" class="out-stock-badge">OUT OF STOCK</span>
           </div>
           
@@ -75,57 +74,66 @@
         </div>
       </div>
 
-      <!-- Pesan Jika Hasil Pencarian Kosong -->
       <div v-else class="no-products-msg">
         <p>PRODUK TIDAK DITEMUKAN</p>
       </div>
     </div>
 
-    <!-- Modal Detail Produk -->
+    <!-- Modal Detail Produk Style Minimalis / Streetwear -->
     <Transition name="fade">
       <div v-if="selectedProduct" class="modal-overlay" @click.self="closeModal">
-        <div class="modal-content">
+        <div class="modal-content-bape">
           <button class="close-btn" @click="closeModal">&times;</button>
           
-          <div class="modal-body">
-            <div class="modal-image-wrapper">
-              <img :src="selectedProduct.image" :alt="selectedProduct.name" />
+          <div class="modal-body-bape">
+            <!-- Sisi Kiri: Gambar Utama -->
+            <div class="main-image-container">
+              <img :src="activeImage || getImageUrl(selectedProduct.image)" :alt="selectedProduct.name" />
             </div>
             
-            <div class="modal-info">
-              <div>
-                <span class="category-badge modal-badge">{{ selectedProduct.category?.name || 'PARFUM' }}</span>
-                <h2 class="modal-title">{{ selectedProduct.name }}</h2>
-                <div class="modal-price">Rp {{ Number(selectedProduct.price).toLocaleString('id-ID') }}</div>
+            <!-- Sisi Kanan: Informasi Produk -->
+            <div class="product-info-container">
+              <h1 class="bape-title">{{ selectedProduct.name }}</h1>
+              <div class="bape-price">
+                Rp {{ Number(selectedProduct.price).toLocaleString('id-ID') }},00
+              </div>
 
-                <div class="stock-status">
-                  <span class="stock-dot" :class="{ 'out': selectedProduct.stock <= 0, 'low': selectedProduct.stock > 0 && selectedProduct.stock <= 5 }"></span>
-                  <span v-if="selectedProduct.stock > 5">Tersedia {{ selectedProduct.stock }} unit</span>
-                  <span v-else-if="selectedProduct.stock > 0" class="text-warning">Sisa {{ selectedProduct.stock }} unit!</span>
-                  <span v-else class="text-danger">Stok Habis</span>
-                </div>
-
-                <div class="size-selector">
-                  <label>UKURAN (ML)</label>
-                  <select v-model="selectedSize">
-                    <option value="30ml">30ml</option>
-                    <option value="50ml">50ml</option>
-                    <option value="100ml">100ml</option>
-                  </select>
-                </div>
-
-                <div class="description-box">
-                  <h4>DESKRIPSI</h4>
-                  <p>{{ selectedProduct.description || 'Wewangian eksklusif De Larache Signature dengan perpaduan aroma bold dan tahan lama.' }}</p>
+              <!-- Color / Variant Thumbnails Galeri -->
+              <div v-if="productImages.length > 0" class="color-thumbnails">
+                <div 
+                  v-for="(img, idx) in productImages" 
+                  :key="idx"
+                  class="thumb-box"
+                  :class="{ 'active': activeImage === img }"
+                  @click="activeImage = img"
+                >
+                  <img :src="img" alt="Variant thumbnail" />
                 </div>
               </div>
 
+              <!-- Size Selector Box Grid -->
+              <div class="size-section">
+                <label class="size-label">SIZE</label>
+                <div class="size-grid">
+                  <button 
+                    v-for="sizeOption in availableSizes" 
+                    :key="sizeOption"
+                    class="size-box"
+                    :class="{ 'active': selectedSize === sizeOption }"
+                    @click="selectedSize = sizeOption"
+                  >
+                    {{ sizeOption }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Main Action Button -->
               <button 
                 @click="addToCart(selectedProduct.id)" 
-                class="btn-add-bag"
+                class="btn-select-size"
                 :disabled="selectedProduct.stock <= 0"
               >
-                {{ selectedProduct.stock > 0 ? 'TAMBAHKAN KE KERANJANG' : 'STOK HABIS' }}
+                {{ selectedProduct.stock > 0 ? (selectedSize ? `TAMBAH KE KERANJANG (${selectedSize})` : 'PILIH UKURAN') : 'STOK HABIS' }}
               </button>
             </div>
           </div>
@@ -144,7 +152,9 @@ import { useRouter, useRoute } from 'vue-router';
 const products = ref([]);
 const loading = ref(true);
 const selectedProduct = ref(null);
-const selectedSize = ref('50ml');
+const activeImage = ref('');
+const selectedSize = ref('M');
+const availableSizes = ref(['S', 'M', 'L', 'XL', 'XXL']);
 const heroVideo = ref(null);
 
 const authStore = useAuthStore();
@@ -164,7 +174,43 @@ const filteredProducts = computed(() => {
   );
 });
 
-// Fungsi memutar video otomatis & memastikan muted
+// Computed parsing galeri foto produk
+const productImages = computed(() => {
+  if (!selectedProduct.value) return [];
+  
+  if (Array.isArray(selectedProduct.value.images) && selectedProduct.value.images.length > 0) {
+    return selectedProduct.value.images.map(img => typeof img === 'object' ? getImageUrl(img.image_path) : getImageUrl(img));
+  }
+  
+  return [getImageUrl(selectedProduct.value.image)];
+});
+
+// Function penanganan URL Gambar Backend
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return 'https://via.placeholder.com/300x300?text=No+Image';
+
+  if (typeof imagePath === 'string' && imagePath.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(imagePath);
+      imagePath = parsed[0] || '';
+    } catch (e) {
+      console.error('Gagal parse path gambar:', e);
+    }
+  }
+
+  if (typeof imagePath === 'string' && (imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
+    return imagePath;
+  }
+
+  const baseUrl = 'http://localhost:8000';
+  let cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  if (cleanPath.startsWith('/storage/')) {
+    cleanPath = cleanPath.replace('/storage/', '/');
+  }
+
+  return `${baseUrl}/storage${cleanPath}`;
+};
+
 const playVideo = () => {
   if (heroVideo.value) {
     heroVideo.value.muted = true;
@@ -187,6 +233,8 @@ const fetchProducts = async () => {
 
 const openModal = (product) => {
   selectedProduct.value = product;
+  selectedSize.value = product.size || 'M';
+  activeImage.value = getImageUrl(product.image);
 };
 
 const closeModal = () => {
@@ -218,7 +266,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap');
 
 .delarache-catalog {
   font-family: 'Montserrat', sans-serif;
@@ -437,160 +485,181 @@ onMounted(() => {
   color: #888888;
 }
 
-/* Modal Styling */
+/* Modal Styling Minimalis Clean White */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(5px);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 999;
 }
 
-.modal-content {
-  background: #141414;
-  border: 1px solid #333;
+.modal-content-bape {
+  background: #ffffff;
+  color: #000000;
   width: 90%;
-  max-width: 650px;
-  padding: 24px;
+  max-width: 900px;
+  padding: 40px;
   position: relative;
-  color: #fff;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
 }
 
 .close-btn {
   position: absolute;
-  top: 12px;
-  right: 16px;
+  top: 15px;
+  right: 20px;
   border: none;
   background: transparent;
-  font-size: 24px;
+  font-size: 28px;
   cursor: pointer;
-  color: #fff;
+  color: #000000;
 }
 
-.modal-body {
+.modal-body-bape {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 40px;
+  align-items: center;
 }
 
-@media (max-width: 640px) {
-  .modal-body {
+@media (max-width: 768px) {
+  .modal-body-bape {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
 }
 
-.modal-image-wrapper {
-  background: #1a1a1a;
-  height: 280px;
-}
-
-.modal-image-wrapper img {
+.main-image-container {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: 380px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #fafafa;
 }
 
-.modal-info {
+.main-image-container img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.product-info-container {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
 }
 
-.modal-title {
-  font-size: 18px;
-  font-weight: 900;
-  margin: 6px 0;
+.bape-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #000000;
+  margin-bottom: 8px;
+  line-height: 1.3;
 }
 
-.modal-price {
+.bape-price {
   font-size: 16px;
-  font-weight: 800;
-  margin-bottom: 10px;
-  color: #e62129;
+  font-weight: 600;
+  color: #111111;
+  margin-bottom: 24px;
 }
 
-.stock-status {
+.color-thumbnails {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.thumb-box {
+  width: 60px;
+  height: 60px;
+  border: 1px solid #e5e5e5;
+  cursor: pointer;
+  padding: 4px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  margin-bottom: 15px;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
-.stock-dot {
-  width: 8px;
-  height: 8px;
-  background-color: #10b981;
-  border-radius: 50%;
+.thumb-box.active, .thumb-box:hover {
+  border: 2px solid #000000;
 }
 
-.stock-dot.low { background-color: #f59e0b; }
-.stock-dot.out { background-color: #ef4444; }
-
-.text-warning { color: #f59e0b; }
-.text-danger { color: #ef4444; }
-
-.size-selector {
-  margin-bottom: 15px;
+.thumb-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
-.size-selector label {
+.size-section {
+  margin-bottom: 30px;
+}
+
+.size-label {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
-  margin-bottom: 4px;
-  color: #aaa;
-}
-
-.size-selector select {
-  width: 100%;
-  padding: 8px;
-  background: #222;
-  border: 1px solid #444;
-  color: #fff;
-  font-weight: 600;
-}
-
-.description-box h4 {
-  font-size: 10px;
-  font-weight: 800;
-  margin-bottom: 4px;
-  color: #aaa;
-}
-
-.description-box p {
-  font-size: 11px;
-  color: #ccc;
-  line-height: 1.4;
-}
-
-.btn-add-bag {
-  background: #ffffff;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
   color: #000000;
-  border: none;
-  width: 100%;
-  padding: 12px;
-  font-weight: 900;
-  font-size: 11px;
-  letter-spacing: 1px;
+}
+
+.size-grid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.size-box {
+  width: 48px;
+  height: 48px;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  color: #000000;
+  font-weight: 600;
+  font-size: 13px;
   cursor: pointer;
-  margin-top: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
-.btn-add-bag:hover:not(:disabled) {
-  background: #e62129;
+.size-box:hover {
+  border-color: #a3a3a3;
+}
+
+.size-box.active {
+  border: 2px solid #000000;
+  font-weight: 800;
+}
+
+.btn-select-size {
+  width: 100%;
+  background: #000000;
   color: #ffffff;
+  border: none;
+  padding: 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
 }
 
-.btn-add-bag:disabled {
-  background: #333;
-  color: #666;
+.btn-select-size:hover:not(:disabled) {
+  background: #222222;
+}
+
+.btn-select-size:disabled {
+  background: #cccccc;
   cursor: not-allowed;
 }
 
