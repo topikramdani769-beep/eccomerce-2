@@ -1,6 +1,7 @@
 <template>
   <div class="delarache-app-wrapper">
-    <header class="navbar">
+    <!-- Navbar hanya akan muncul jika bukan di halaman /login atau /register -->
+    <header v-if="showNavbar" class="navbar">
       <div class="nav-container">
         <!-- Brand Logo DE LARACHE dengan Ikon Gorila & Efek Glitch -->
         <router-link to="/" class="brand">
@@ -29,13 +30,13 @@
           />
         </div>
 
-        <!-- Navigasi Utama dengan Ikon Lengkap & Efek Glitch Uniform -->
+        <!-- Navigasi Utama -->
         <nav class="nav-links">
           <router-link to="/" class="nav-item">
             <span class="glitch" data-text="SHOP">SHOP</span>
           </router-link>
           
-          <!-- Menu Cart dengan Logo Keranjang -->
+          <!-- Menu Cart -->
           <router-link to="/cart" class="nav-item nav-icon-item">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
@@ -47,7 +48,6 @@
 
           <!-- Status Setelah Login -->
           <template v-if="isAuthenticated">
-            <!-- Menu My Orders dengan Logo Paket/Pesanan -->
             <router-link to="/orders" class="nav-item nav-icon-item">
               <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line>
@@ -58,7 +58,6 @@
               <span class="glitch" data-text="MY ORDERS">MY ORDERS</span>
             </router-link>
 
-            <!-- Admin Button dengan Ikon Shield/Lock -->
             <router-link 
               v-if="Boolean(user?.is_admin)" 
               to="/admin" 
@@ -71,7 +70,6 @@
               <span class="glitch" data-text="ADMIN">ADMIN</span>
             </router-link>
 
-            <!-- Greeting User dengan Ikon Profile -->
             <span class="nav-item nav-icon-item greeting-item">
               <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -82,7 +80,6 @@
               </span>
             </span>
 
-            <!-- Logout Button dengan Ikon Logout + Glitch Biru -->
             <button @click="handleLogout" class="btn-logout nav-icon-item">
               <svg class="nav-icon logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -116,14 +113,21 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useAuthStore } from './stores/auth';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 
 const searchQuery = ref('');
 const authStore = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
 const isAuthenticated = computed(() => authStore.isAuthenticated);
 const user = computed(() => authStore.user);
+
+// Menyembunyikan navbar jika sedang di halaman /login atau /register
+const showNavbar = computed(() => {
+  const hiddenRoutes = ['/login', '/register'];
+  return !hiddenRoutes.includes(route.path);
+});
 
 const handleSearch = () => {
   if (searchQuery.value.trim()) {
@@ -205,9 +209,7 @@ const handleLogout = async () => {
   margin-top: 2px;
 }
 
-/* ==========================================================
-   SEARCH BAR STREETWEAR STYLE
-   ========================================================== */
+/* Search Bar Streetwear Style */
 .search-box {
   display: flex;
   align-items: center;
@@ -250,9 +252,7 @@ const handleLogout = async () => {
   color: #888888;
 }
 
-/* ==========================================================
-   EFEK GLITCH STANDARD (MERAH & CYAN)
-   ========================================================== */
+/* Efek Glitch Standard (Merah & Cyan) */
 .glitch {
   position: relative;
   display: inline-block;
@@ -273,7 +273,7 @@ const handleLogout = async () => {
 *:hover > .glitch::before,
 .glitch:hover::before {
   left: -2px;
-  text-shadow: 2px 0 #d61c24; /* Aksen Merah */
+  text-shadow: 2px 0 #d61c24;
   clip: rect(5px, 9999px, 20px, 0);
   animation: glitch-anim-1 0.25s infinite linear alternate-reverse;
 }
@@ -281,14 +281,12 @@ const handleLogout = async () => {
 *:hover > .glitch::after,
 .glitch:hover::after {
   left: 2px;
-  text-shadow: -2px 0 #00ffff; /* Aksen Cyan */
+  text-shadow: -2px 0 #00ffff;
   clip: rect(18px, 9999px, 35px, 0);
   animation: glitch-anim-2 0.2s infinite linear alternate-reverse;
 }
 
-/* ==========================================================
-   EFEK GLITCH KHUSUS LOGOUT (BIRU & CYAN)
-   ========================================================== */
+/* Efek Glitch Khusus Logout (Biru & Cyan) */
 .glitch-blue {
   position: relative;
   display: inline-block;
@@ -308,14 +306,14 @@ const handleLogout = async () => {
 
 .btn-logout:hover .glitch-blue::before {
   left: -2px;
-  text-shadow: 2px 0 #0066ff; /* Biru Neon */
+  text-shadow: 2px 0 #0066ff;
   clip: rect(5px, 9999px, 20px, 0);
   animation: glitch-anim-1 0.25s infinite linear alternate-reverse;
 }
 
 .btn-logout:hover .glitch-blue::after {
   left: 2px;
-  text-shadow: -2px 0 #00e5ff; /* Cyan Biru Terang */
+  text-shadow: -2px 0 #00e5ff;
   clip: rect(18px, 9999px, 35px, 0);
   animation: glitch-anim-2 0.2s infinite linear alternate-reverse;
 }
@@ -337,9 +335,7 @@ const handleLogout = async () => {
   100% { clip: rect(16px, 9999px, 5px, 0); }
 }
 
-/* ==========================================================
-   STYLING ITEM NAVIGASI & IKON
-   ========================================================== */
+/* Styling Item Navigasi & Ikon */
 .nav-links {
   display: flex;
   align-items: center;
@@ -420,7 +416,7 @@ const handleLogout = async () => {
 }
 
 .btn-logout:hover {
-  color: #0066ff; /* Teks Logout Berubah Biru Saat Hover */
+  color: #0066ff;
 }
 
 /* Tombol Register */

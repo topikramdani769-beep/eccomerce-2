@@ -1,10 +1,22 @@
 <template>
   <div class="delarache-catalog">
-    <!-- Hero Banner dengan Background Video -->
+    <!-- Hero Banner dengan Background Video Lokal -->
     <section class="hero-banner">
-      <video autoplay loop muted playsinline class="hero-video">
-        <source src="https://assets.mixkit.co/videos/preview/mixkit-fashion-model-in-a-neon-lit-city-41563-large.mp4" type="video/mp4" />
+      <video 
+        ref="heroVideo"
+        autoplay 
+        loop 
+        muted 
+        playsinline 
+        preload="auto"
+        class="hero-video"
+        @loadedmetadata="playVideo"
+      >
+        <!-- Menggunakan File Video Lokal dari Folder public/ -->
+        <source src="/hero-video.mp4" type="video/mp4" />
+        Browser Anda tidak mendukung pemutaran video.
       </video>
+      
       <div class="hero-overlay">
         <span class="tag-red">EDISI TERBATAS 2026</span>
         <h1 class="main-title">DE LARACHE<br>SIGNATURE</h1>
@@ -20,10 +32,13 @@
 
     <!-- Product Grid -->
     <div v-else class="catalog-section">
-      <h2 class="section-title">KOLEKSI UTAMA</h2>
-      <div class="product-grid">
+      <h2 class="section-title">
+        {{ currentSearchQuery ? `HASIL PENCARIAN: "${currentSearchQuery.toUpperCase()}"` : 'KOLEKSI UTAMA' }}
+      </h2>
+
+      <div v-if="filteredProducts.length > 0" class="product-grid">
         <div 
-          v-for="product in products" 
+          v-for="product in filteredProducts" 
           :key="product.id" 
           class="product-card"
           @click="openModal(product)"
@@ -58,6 +73,11 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Pesan Jika Hasil Pencarian Kosong -->
+      <div v-else class="no-products-msg">
+        <p>PRODUK TIDAK DITEMUKAN</p>
       </div>
     </div>
 
@@ -116,17 +136,43 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import api from '../services/api';
 import { useAuthStore } from '../stores/auth';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 
 const products = ref([]);
 const loading = ref(true);
 const selectedProduct = ref(null);
 const selectedSize = ref('50ml');
+const heroVideo = ref(null);
+
 const authStore = useAuthStore();
 const router = useRouter();
+const route = useRoute();
+
+// Ambil kata kunci pencarian dari URL
+const currentSearchQuery = computed(() => route.query.search || '');
+
+// Filter produk berdasarkan input pencarian
+const filteredProducts = computed(() => {
+  if (!currentSearchQuery.value) return products.value;
+  const query = currentSearchQuery.value.toLowerCase();
+  return products.value.filter(product => 
+    product.name.toLowerCase().includes(query) ||
+    (product.description && product.description.toLowerCase().includes(query))
+  );
+});
+
+// Fungsi memutar video otomatis & memastikan muted
+const playVideo = () => {
+  if (heroVideo.value) {
+    heroVideo.value.muted = true;
+    heroVideo.value.play().catch((err) => {
+      console.warn('Autoplay video terhalang kebijakan browser:', err);
+    });
+  }
+};
 
 const fetchProducts = async () => {
   try {
@@ -167,6 +213,7 @@ const addToCart = async (productId) => {
 
 onMounted(() => {
   fetchProducts();
+  playVideo();
 });
 </script>
 
@@ -380,6 +427,14 @@ onMounted(() => {
   background: #444;
   color: #888;
   cursor: not-allowed;
+}
+
+.no-products-msg {
+  text-align: center;
+  padding: 40px 0;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #888888;
 }
 
 /* Modal Styling */

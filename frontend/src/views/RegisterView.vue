@@ -1,9 +1,8 @@
 <template>
-  <div class="bape-auth-page">
+  <div class="delarache-auth-page">
     <div class="auth-card">
       <div class="brand-header">
-        <div class="brand-badge">🦍</div>
-        <span class="sub-heading">JOIN THE CLUB</span>
+        <span class="tag-red">MEMBER ACCESS</span>
         <h2 class="main-title">CREATE ACCOUNT</h2>
       </div>
 
@@ -48,7 +47,7 @@
             type="email" 
             v-model="form.email" 
             class="form-control" 
-            placeholder="bape@streetwear.com"
+            placeholder="user@example.com"
             :disabled="isLoading"
             required 
           />
@@ -88,7 +87,7 @@
 
         <div class="auth-footer">
           <span>ALREADY HAVE AN ACCOUNT?</span>
-          <router-link to="/login" class="link-gold">SIGN IN</router-link>
+          <router-link to="/login" class="link-red">SIGN IN</router-link>
         </div>
       </form>
     </div>
@@ -140,11 +139,12 @@ const handleRegister = async () => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap');
 
-.bape-auth-page {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: #e2e1dc;
+.delarache-auth-page {
+  font-family: 'Montserrat', sans-serif;
+  /* Background abu-abu terang seragam dengan Login */
+  background-color: #f4f5f7;
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -154,45 +154,40 @@ const handleRegister = async () => {
 }
 
 .auth-card {
-  background: #f4f3ef;
-  border-radius: 16px;
-  padding: 36px 32px;
+  /* Kartu berwarna putih bersih dengan border netral */
+  background: #ffffff;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 40px 32px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   animation: fadeIn 0.4s ease-out;
 }
 
 .brand-header {
-  text-align: center;
-  margin-bottom: 24px;
+  text-align: left;
+  margin-bottom: 28px;
 }
 
-.brand-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  background: #2b2a28;
-  border-radius: 50%;
-  font-size: 20px;
-  margin-bottom: 12px;
-}
-
-.sub-heading {
-  display: block;
+.tag-red {
+  background-color: #e62129;
+  color: #ffffff;
   font-size: 10px;
-  letter-spacing: 3px;
   font-weight: 800;
-  color: #666;
+  padding: 4px 8px;
+  letter-spacing: 1.5px;
+  display: inline-block;
+  margin-bottom: 8px;
+  border-radius: 2px;
 }
 
 .main-title {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 900;
   letter-spacing: 2px;
-  margin-top: 4px;
+  color: #111111;
+  margin: 0;
 }
 
 /* Alert Notification Banner */
@@ -201,20 +196,20 @@ const handleRegister = async () => {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  border-radius: 8px;
+  border-radius: 4px;
   margin-bottom: 20px;
 }
 
 .alert-success {
-  background-color: rgba(200, 178, 130, 0.15);
-  border: 1px solid #c8b282;
-  color: #8f794b;
+  background-color: #eefbe8;
+  border: 1px solid #4ade80;
+  color: #166534;
 }
 
 .alert-error {
-  background-color: rgba(239, 68, 68, 0.1);
-  border: 1px solid #ef4444;
-  color: #dc2626;
+  background-color: #fff0f0;
+  border: 1px solid #ff4d4d;
+  color: #d61c24;
 }
 
 .alert .icon {
@@ -224,7 +219,7 @@ const handleRegister = async () => {
 
 .alert-content strong {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 1px;
 }
 
@@ -238,32 +233,32 @@ const handleRegister = async () => {
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .form-group label {
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 1.5px;
-  color: #555;
+  color: #555555;
 }
 
 .form-control {
   width: 100%;
   padding: 12px 14px;
-  background: #e7e6e0;
-  border: 1px solid transparent;
-  border-radius: 8px;
+  background: #f8f9fa;
+  border: 1.5px solid #dcdcdc;
+  border-radius: 4px;
   font-family: inherit;
   font-size: 13px;
   font-weight: 600;
-  color: #111;
+  color: #111111;
   box-sizing: border-box;
   transition: all 0.2s ease;
 }
@@ -271,40 +266,43 @@ const handleRegister = async () => {
 .form-control:focus {
   outline: none;
   background: #ffffff;
-  border-color: #c8b282;
-  box-shadow: 0 0 0 3px rgba(200, 178, 130, 0.2);
+  border-color: #e62129;
+  box-shadow: 0 0 0 3px rgba(230, 33, 41, 0.1);
 }
 
 .form-control:disabled {
-  opacity: 0.6;
+  background: #e9ecef;
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
 /* Custom Button & Loading Spinner */
 .btn-submit {
   width: 100%;
-  height: 46px;
-  background: #c8b282;
+  height: 48px;
+  background: #111111;
   color: #ffffff;
   border: none;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 800;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 900;
   letter-spacing: 1.5px;
   cursor: pointer;
   margin-top: 6px;
-  transition: background 0.2s ease;
+  transition: all 0.3s ease;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .btn-submit:hover:not(:disabled) {
-  background: #b59f6f;
+  background: #e62129;
+  color: #ffffff;
 }
 
 .btn-submit:disabled {
-  background: #ccc;
+  background: #cccccc;
+  color: #777777;
   cursor: not-allowed;
 }
 
@@ -324,24 +322,26 @@ const handleRegister = async () => {
 }
 
 .auth-footer {
-  margin-top: 8px;
+  margin-top: 10px;
   text-align: center;
   font-size: 11px;
-  font-weight: 700;
-  color: #666;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #666666;
   display: flex;
   gap: 6px;
   justify-content: center;
 }
 
-.link-gold {
-  color: #111;
+.link-red {
+  color: #111111;
   font-weight: 800;
   text-decoration: underline;
+  transition: color 0.2s;
 }
 
-.link-gold:hover {
-  color: #c8b282;
+.link-red:hover {
+  color: #e62129;
 }
 
 /* Animations */
