@@ -1,63 +1,67 @@
 <template>
-  <div class="bape-catalog">
-    <!-- Hero Banner Minimalis -->
-    <header class="hero-banner">
-      <span class="sub-heading">HERO BANNER</span>
-      <h1 class="main-title">NEW ARRIVALS</h1>
-      <p class="tagline">OFFICIAL BAPE STREETWEAR COLLECTION</p>
-      <div class="brand-badge">
-        <span>🦍</span>
+  <div class="delarache-catalog">
+    <!-- Hero Banner dengan Background Video -->
+    <section class="hero-banner">
+      <video autoplay loop muted playsinline class="hero-video">
+        <source src="https://assets.mixkit.co/videos/preview/mixkit-fashion-model-in-a-neon-lit-city-41563-large.mp4" type="video/mp4" />
+      </video>
+      <div class="hero-overlay">
+        <span class="tag-red">EDISI TERBATAS 2026</span>
+        <h1 class="main-title">DE LARACHE<br>SIGNATURE</h1>
+        <button class="btn-buy-now">BELI SEKARANG</button>
       </div>
-    </header>
+    </section>
 
     <!-- State Loading -->
     <div v-if="loading" class="state-msg">
       <div class="spinner"></div>
-      <p>Loading Catalog...</p>
+      <p>LOADING CATALOG...</p>
     </div>
 
     <!-- Product Grid -->
-    <div v-else class="product-grid">
-      <div 
-        v-for="product in products" 
-        :key="product.id" 
-        class="product-card"
-        @click="openModal(product)"
-      >
-        <div class="image-wrapper">
-          <img :src="product.image" :alt="product.name" />
-          <span v-if="product.stock <= 0" class="out-stock-badge">OUT OF STOCK</span>
-        </div>
-        
-        <div class="card-body">
-          <div class="badge-wrapper">
-            <span class="category-badge">{{ product.category?.name || 'Streetwear' }}</span>
+    <div v-else class="catalog-section">
+      <h2 class="section-title">KOLEKSI UTAMA</h2>
+      <div class="product-grid">
+        <div 
+          v-for="product in products" 
+          :key="product.id" 
+          class="product-card"
+          @click="openModal(product)"
+        >
+          <div class="image-wrapper">
+            <img :src="product.image" :alt="product.name" />
+            <span v-if="product.stock <= 0" class="out-stock-badge">OUT OF STOCK</span>
           </div>
           
-          <h3 class="product-title">{{ product.name }}</h3>
-          
-          <div class="card-footer">
-            <div class="price-stock-info">
-              <span class="price-label">Price</span>
-              <span class="price-value">Rp {{ Number(product.price).toLocaleString('id-ID') }}</span>
-              <span class="stock-info" :class="{ 'low-stock': product.stock > 0 && product.stock <= 5 }">
-                Stok: {{ product.stock ?? 0 }} pcs
-              </span>
+          <div class="card-body">
+            <div class="badge-wrapper">
+              <span class="category-badge">{{ product.category?.name || 'PARFUM' }}</span>
             </div>
             
-            <button 
-              @click.stop="addToCart(product.id)" 
-              class="btn-cart"
-              :disabled="product.stock <= 0"
-            >
-              {{ product.stock > 0 ? '+ Cart' : 'Sold Out' }}
-            </button>
+            <h3 class="product-title">{{ product.name }}</h3>
+            
+            <div class="card-footer">
+              <div class="price-stock-info">
+                <span class="price-value">Rp {{ Number(product.price).toLocaleString('id-ID') }}</span>
+                <span class="stock-info" :class="{ 'low-stock': product.stock > 0 && product.stock <= 5 }">
+                  Stok: {{ product.stock ?? 0 }}
+                </span>
+              </div>
+              
+              <button 
+                @click.stop="addToCart(product.id)" 
+                class="btn-cart"
+                :disabled="product.stock <= 0"
+              >
+                {{ product.stock > 0 ? '+ CART' : 'SOLD OUT' }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Modal Detail Produk Style Modern Luxury -->
+    <!-- Modal Detail Produk -->
     <Transition name="fade">
       <div v-if="selectedProduct" class="modal-overlay" @click.self="closeModal">
         <div class="modal-content">
@@ -70,32 +74,29 @@
             
             <div class="modal-info">
               <div>
-                <span class="category-badge modal-badge">{{ selectedProduct.category?.name || 'Streetwear' }}</span>
+                <span class="category-badge modal-badge">{{ selectedProduct.category?.name || 'PARFUM' }}</span>
                 <h2 class="modal-title">{{ selectedProduct.name }}</h2>
                 <div class="modal-price">Rp {{ Number(selectedProduct.price).toLocaleString('id-ID') }}</div>
 
-                <!-- Informasi Stok di Modal -->
                 <div class="stock-status">
                   <span class="stock-dot" :class="{ 'out': selectedProduct.stock <= 0, 'low': selectedProduct.stock > 0 && selectedProduct.stock <= 5 }"></span>
                   <span v-if="selectedProduct.stock > 5">Tersedia {{ selectedProduct.stock }} unit</span>
-                  <span v-else-if="selectedProduct.stock > 0" class="text-warning">Sisa {{ selectedProduct.stock }} unit lagi!</span>
+                  <span v-else-if="selectedProduct.stock > 0" class="text-warning">Sisa {{ selectedProduct.stock }} unit!</span>
                   <span v-else class="text-danger">Stok Habis</span>
                 </div>
 
-                <!-- Size Selector Option -->
                 <div class="size-selector">
-                  <label>Size</label>
+                  <label>UKURAN (ML)</label>
                   <select v-model="selectedSize">
-                    <option value="S">S</option>
-                    <option value="M">M</option>
-                    <option value="L">L</option>
-                    <option value="XL">XL</option>
+                    <option value="30ml">30ml</option>
+                    <option value="50ml">50ml</option>
+                    <option value="100ml">100ml</option>
                   </select>
                 </div>
 
                 <div class="description-box">
-                  <h4>Description</h4>
-                  <p>{{ selectedProduct.description || 'A Bathing Ape streetwear collection with premium materials and signature design aesthetic.' }}</p>
+                  <h4>DESKRIPSI</h4>
+                  <p>{{ selectedProduct.description || 'Wewangian eksklusif De Larache Signature dengan perpaduan aroma bold dan tahan lama.' }}</p>
                 </div>
               </div>
 
@@ -104,7 +105,7 @@
                 class="btn-add-bag"
                 :disabled="selectedProduct.stock <= 0"
               >
-                {{ selectedProduct.stock > 0 ? 'ADD TO BAG' : 'OUT OF STOCK' }}
+                {{ selectedProduct.stock > 0 ? 'TAMBAHKAN KE KERANJANG' : 'STOK HABIS' }}
               </button>
             </div>
           </div>
@@ -123,7 +124,7 @@ import { useRouter } from 'vue-router';
 const products = ref([]);
 const loading = ref(true);
 const selectedProduct = ref(null);
-const selectedSize = ref('M');
+const selectedSize = ref('50ml');
 const authStore = useAuthStore();
 const router = useRouter();
 
@@ -170,89 +171,125 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap');
 
-.bape-catalog {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: #e2e1dc;
+.delarache-catalog {
+  font-family: 'Montserrat', sans-serif;
+  background-color: #0d0d0d;
   min-height: 100vh;
-  padding: 40px 20px;
-  color: #111111;
+  color: #ffffff;
 }
 
-/* Hero Banner */
+/* Hero Section */
 .hero-banner {
-  text-align: center;
-  margin-bottom: 50px;
+  position: relative;
+  width: 100%;
+  height: 80vh;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
 }
 
-.sub-heading {
-  font-size: 11px;
-  letter-spacing: 3px;
-  font-weight: 700;
-  color: #666;
-  text-transform: uppercase;
+.hero-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+}
+
+.hero-overlay {
+  position: relative;
+  z-index: 2;
+  padding: 60px 40px;
+}
+
+.tag-red {
+  background-color: #e62129;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 5px 10px;
+  letter-spacing: 1.5px;
+  display: inline-block;
+  margin-bottom: 12px;
 }
 
 .main-title {
-  font-size: 42px;
+  font-size: 48px;
   font-weight: 900;
+  line-height: 1;
   letter-spacing: 2px;
-  margin: 8px 0;
+  margin-bottom: 20px;
+  color: #ffffff;
+  text-shadow: 2px 2px 0px #e62129, -2px -2px 0px #00ffff;
 }
 
-.tagline {
+.btn-buy-now {
+  background-color: #ffffff;
+  color: #000000;
+  border: none;
+  padding: 12px 28px;
   font-size: 12px;
-  letter-spacing: 3px;
-  color: #555;
-  font-weight: 600;
+  font-weight: 900;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
-.brand-badge {
-  margin-top: 15px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: #2b2a28;
-  border-radius: 50%;
-  font-size: 18px;
+.btn-buy-now:hover {
+  background-color: #e62129;
+  color: #ffffff;
 }
 
-/* Grid Layout */
-.product-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 24px;
+/* Catalog Grid */
+.catalog-section {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 50px 20px;
 }
 
-/* Card Styling */
+.section-title {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  margin-bottom: 30px;
+  border-left: 4px solid #e62129;
+  padding-left: 12px;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 24px;
+}
+
 .product-card {
-  background: #f4f3ef;
-  border-radius: 12px;
+  background: #141414;
+  border: 1px solid #222;
+  border-radius: 4px;
   padding: 12px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  transition: transform 0.3s;
 }
 
 .product-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+  transform: translateY(-5px);
+  border-color: #444;
 }
 
 .image-wrapper {
   position: relative;
   width: 100%;
-  height: 240px;
-  background: #e7e6e0;
-  border-radius: 8px;
+  height: 250px;
+  background: #1a1a1a;
   overflow: hidden;
 }
 
@@ -266,12 +303,11 @@ onMounted(() => {
   position: absolute;
   top: 10px;
   left: 10px;
-  background: rgba(0,0,0,0.7);
+  background: #e62129;
   color: #fff;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 800;
   padding: 4px 8px;
-  border-radius: 4px;
 }
 
 .card-body {
@@ -283,31 +319,25 @@ onMounted(() => {
 }
 
 .category-badge {
-  background: #c8b282;
-  color: #ffffff;
+  color: #e62129;
   font-size: 9px;
   font-weight: 800;
-  padding: 4px 10px;
-  border-radius: 12px;
   letter-spacing: 1px;
-  display: inline-block;
 }
 
 .product-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
-  margin: 10px 0;
-  text-transform: uppercase;
+  margin: 8px 0;
+  color: #fff;
   letter-spacing: 0.5px;
-  color: #111;
-  line-height: 1.3;
 }
 
 .card-footer {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .price-stock-info {
@@ -315,58 +345,52 @@ onMounted(() => {
   flex-direction: column;
 }
 
-.price-label {
-  font-size: 10px;
-  color: #888;
-}
-
 .price-value {
   font-size: 14px;
   font-weight: 800;
-  color: #111;
+  color: #fff;
 }
 
 .stock-info {
   font-size: 10px;
-  color: #666;
+  color: #888;
   margin-top: 2px;
-  font-weight: 600;
 }
 
 .stock-info.low-stock {
-  color: #d97706;
+  color: #f59e0b;
 }
 
 .btn-cart {
-  background: #111111;
-  color: #ffffff;
+  background: #ffffff;
+  color: #000000;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 700;
+  padding: 8px 14px;
+  font-size: 10px;
+  font-weight: 900;
   cursor: pointer;
-  transition: background 0.2s;
 }
 
 .btn-cart:hover:not(:disabled) {
-  background: #333333;
+  background: #e62129;
+  color: #fff;
 }
 
 .btn-cart:disabled {
-  background: #aaa;
+  background: #444;
+  color: #888;
   cursor: not-allowed;
 }
 
-/* Modal Overlay & Card */
+/* Modal Styling */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -374,30 +398,30 @@ onMounted(() => {
 }
 
 .modal-content {
-  background: #ffffff;
-  border-radius: 16px;
+  background: #141414;
+  border: 1px solid #333;
   width: 90%;
-  max-width: 680px;
+  max-width: 650px;
   padding: 24px;
   position: relative;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  color: #fff;
 }
 
 .close-btn {
   position: absolute;
-  top: 16px;
-  right: 20px;
+  top: 12px;
+  right: 16px;
   border: none;
   background: transparent;
   font-size: 24px;
   cursor: pointer;
-  color: #666;
+  color: #fff;
 }
 
 .modal-body {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 20px;
 }
 
 @media (max-width: 640px) {
@@ -407,10 +431,8 @@ onMounted(() => {
 }
 
 .modal-image-wrapper {
-  background: #f4f3ef;
-  border-radius: 12px;
-  overflow: hidden;
-  height: 300px;
+  background: #1a1a1a;
+  height: 280px;
 }
 
 .modal-image-wrapper img {
@@ -428,14 +450,14 @@ onMounted(() => {
 .modal-title {
   font-size: 18px;
   font-weight: 900;
-  margin: 8px 0;
-  text-transform: uppercase;
+  margin: 6px 0;
 }
 
 .modal-price {
   font-size: 16px;
   font-weight: 800;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  color: #e62129;
 }
 
 .stock-status {
@@ -443,7 +465,6 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  font-weight: 600;
   margin-bottom: 15px;
 }
 
@@ -454,15 +475,10 @@ onMounted(() => {
   border-radius: 50%;
 }
 
-.stock-dot.low {
-  background-color: #f59e0b;
-}
+.stock-dot.low { background-color: #f59e0b; }
+.stock-dot.out { background-color: #ef4444; }
 
-.stock-dot.out {
-  background-color: #ef4444;
-}
-
-.text-warning { color: #d97706; }
+.text-warning { color: #f59e0b; }
 .text-danger { color: #ef4444; }
 
 .size-selector {
@@ -471,83 +487,79 @@ onMounted(() => {
 
 .size-selector label {
   display: block;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   margin-bottom: 4px;
-  color: #444;
+  color: #aaa;
 }
 
 .size-selector select {
   width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  background: #f8fafc;
+  padding: 8px;
+  background: #222;
+  border: 1px solid #444;
+  color: #fff;
   font-weight: 600;
-  outline: none;
 }
 
 .description-box h4 {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   margin-bottom: 4px;
-  color: #444;
+  color: #aaa;
 }
 
 .description-box p {
   font-size: 11px;
-  color: #666;
-  line-height: 1.5;
+  color: #ccc;
+  line-height: 1.4;
 }
 
 .btn-add-bag {
-  background: #c8b282;
-  color: #ffffff;
+  background: #ffffff;
+  color: #000000;
   border: none;
   width: 100%;
   padding: 12px;
-  border-radius: 8px;
-  font-weight: 800;
-  font-size: 12px;
+  font-weight: 900;
+  font-size: 11px;
   letter-spacing: 1px;
   cursor: pointer;
   margin-top: 15px;
-  transition: background 0.2s;
 }
 
 .btn-add-bag:hover:not(:disabled) {
-  background: #b59f6f;
+  background: #e62129;
+  color: #ffffff;
 }
 
 .btn-add-bag:disabled {
-  background: #ccc;
+  background: #333;
+  color: #666;
   cursor: not-allowed;
 }
 
-/* Animations */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.25s ease;
-}
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
-}
-
-/* Spinner */
+/* Loading Spinner */
 .state-msg {
   text-align: center;
   padding: 60px 0;
-  color: #666;
+  color: #fff;
 }
+
 .spinner {
   width: 28px;
   height: 28px;
-  border: 3px solid #ccc;
-  border-top-color: #111;
+  border: 3px solid #333;
+  border-top-color: #e62129;
   border-radius: 50%;
   margin: 0 auto 12px auto;
   animation: spin 0.8s linear infinite;
 }
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.25s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
