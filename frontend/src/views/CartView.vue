@@ -68,7 +68,7 @@
           </div>
           <div class="summary-row">
             <span>Shipping Fee</span>
-            <span class="text-gold">FREE</span>
+            <span class="text-red">FREE</span>
           </div>
           <hr class="divider" />
           <div class="summary-row total-row">
@@ -144,11 +144,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap');
 
 .cart-page {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: #e2e1dc;
+  font-family: 'Montserrat', sans-serif;
+  background-color: #f4f5f7;
   min-height: calc(100vh - 70px);
   padding: 40px 20px;
   color: #111111;
@@ -160,46 +160,48 @@ onMounted(() => {
 }
 
 .page-title {
-  font-family: 'Oswald', sans-serif;
-  font-size: 28px;
-  letter-spacing: 2.5px;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 2px;
   margin-bottom: 30px;
   border-bottom: 2px solid #111111;
   padding-bottom: 12px;
+  color: #111111;
 }
 
 .state-msg, .empty-cart {
   text-align: center;
   padding: 80px 20px;
-  background: #f4f3ef;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  background: #ffffff;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
 }
 
 .empty-cart p {
-  font-family: 'Oswald', sans-serif;
-  font-size: 16px;
+  font-size: 14px;
+  font-weight: 800;
   letter-spacing: 1.5px;
-  color: #555;
+  color: #555555;
   margin-bottom: 24px;
 }
 
 .btn-shop {
   display: inline-block;
-  font-family: 'Oswald', sans-serif;
   background: #111111;
   color: #ffffff;
   padding: 12px 28px;
-  font-size: 13px;
-  letter-spacing: 2px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
   text-decoration: none;
-  border-radius: 6px;
+  border-radius: 4px;
   transition: all 0.2s ease;
 }
 
 .btn-shop:hover {
-  background: #c8b282;
-  color: #111111;
+  background: #e62129;
+  color: #ffffff;
 }
 
 .cart-layout {
@@ -216,15 +218,15 @@ onMounted(() => {
 
 /* Cart Items */
 .cart-item {
-  background-color: #f4f3ef;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: #ffffff;
+  border: 1.5px solid #e0e0e0;
   padding: 20px;
   margin-bottom: 16px;
   display: flex;
   flex-direction: column;
   gap: 20px;
   justify-content: space-between;
-  border-radius: 10px;
+  border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
@@ -245,28 +247,33 @@ onMounted(() => {
   width: 84px;
   height: 84px;
   object-fit: cover;
-  background-color: #e2e1dc;
-  border-radius: 8px;
+  background-color: #f8f9fa;
+  border: 1px solid #eee;
+  border-radius: 4px;
 }
 
 .category-badge {
-  font-family: 'Oswald', sans-serif;
-  font-size: 11px;
-  color: #c8b282;
+  font-size: 10px;
+  color: #ffffff;
+  background-color: #e62129;
   letter-spacing: 1.5px;
-  font-weight: 700;
+  font-weight: 800;
+  padding: 2px 6px;
   text-transform: uppercase;
+  border-radius: 2px;
+  display: inline-block;
 }
 
 .product-name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
-  margin: 4px 0;
+  margin: 6px 0 2px 0;
+  color: #111111;
 }
 
 .unit-price {
   font-size: 13px;
-  color: #666;
+  color: #666666;
   font-weight: 600;
 }
 
@@ -281,15 +288,16 @@ onMounted(() => {
 .qty-control {
   display: flex;
   align-items: center;
-  background-color: #e7e6e0;
-  border-radius: 6px;
+  background-color: #f8f9fa;
+  border: 1.5px solid #dcdcdc;
+  border-radius: 4px;
   padding: 2px;
 }
 
 .btn-qty {
   background: none;
   border: none;
-  color: #111;
+  color: #111111;
   width: 32px;
   height: 32px;
   cursor: pointer;
@@ -313,12 +321,13 @@ onMounted(() => {
   font-size: 15px;
   min-width: 110px;
   text-align: right;
+  color: #111111;
 }
 
 .btn-remove {
   background: none;
   border: none;
-  color: #dc2626;
+  color: #e62129;
   font-size: 16px;
   cursor: pointer;
   padding: 6px;
@@ -331,19 +340,20 @@ onMounted(() => {
 
 /* Order Summary */
 .cart-summary {
-  background-color: #f4f3ef;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: #ffffff;
+  border: 1.5px solid #e0e0e0;
   padding: 28px;
   height: fit-content;
-  border-radius: 12px;
+  border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .summary-title {
-  font-family: 'Oswald', sans-serif;
-  font-size: 20px;
-  letter-spacing: 2px;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
   margin-bottom: 20px;
+  color: #111111;
 }
 
 .summary-row {
@@ -352,24 +362,29 @@ onMounted(() => {
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 14px;
-  color: #555;
+  color: #555555;
 }
 
 .divider {
   border: none;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 1.5px solid #eeeeee;
   margin: 18px 0;
 }
 
 .total-row {
   font-size: 16px;
-  font-weight: 800;
-  color: #111;
+  font-weight: 900;
+  color: #111111;
   margin-bottom: 24px;
 }
 
-.total-price, .text-gold {
-  color: #8f794b;
+.total-price {
+  color: #111111;
+  font-weight: 900;
+}
+
+.text-red {
+  color: #e62129;
   font-weight: 800;
 }
 
@@ -380,18 +395,18 @@ onMounted(() => {
   background: #111111;
   color: #ffffff;
   padding: 14px 0;
-  font-family: 'Oswald', sans-serif;
-  font-size: 13px;
-  letter-spacing: 2px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
   text-decoration: none;
-  border-radius: 8px;
+  border-radius: 4px;
   transition: background 0.2s ease;
   box-sizing: border-box;
 }
 
 .btn-checkout:hover {
-  background: #c8b282;
-  color: #111111;
+  background: #e62129;
+  color: #ffffff;
 }
 
 .spinner {
@@ -399,7 +414,7 @@ onMounted(() => {
   width: 24px;
   height: 24px;
   border: 3px solid rgba(0, 0, 0, 0.1);
-  border-top-color: #c8b282;
+  border-top-color: #e62129;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-bottom: 12px;

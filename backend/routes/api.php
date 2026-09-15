@@ -41,6 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Checkout & Orders (User Side)
     Route::post('/checkout', [OrderController::class, 'checkout']);
+    Route::post('/orders', [OrderController::class, 'checkout']);
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
 
@@ -54,9 +55,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/categories/{category}', [CategoryController::class, 'update']);
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
 
-        // Products Management (Termasuk Support FormData Multipart)
+        // Products Management (Support Multipart Form Data & Method Spoofing)
         Route::post('/products', [ProductController::class, 'store']);
-        Route::put('/products/{product}', [ProductController::class, 'update']);
         Route::post('/products/{product}', [ProductController::class, 'update']);
         Route::delete('/products/{product}', [ProductController::class, 'destroy']);
 

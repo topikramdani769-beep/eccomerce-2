@@ -1,110 +1,139 @@
 <template>
-  <div class="bape-catalog">
-    <!-- Hero Banner Minimalis -->
-    <header class="hero-banner">
-      <span class="sub-heading">HERO BANNER</span>
-      <h1 class="main-title">NEW ARRIVALS</h1>
-      <p class="tagline">OFFICIAL BAPE STREETWEAR COLLECTION</p>
-      <div class="brand-badge">
-        <span>🦍</span>
+  <div class="delarache-catalog">
+    <!-- Hero Banner dengan Background Video Lokal -->
+    <section class="hero-banner">
+      <video 
+        ref="heroVideo"
+        autoplay 
+        loop 
+        muted 
+        playsinline 
+        preload="auto"
+        class="hero-video"
+        @loadedmetadata="playVideo"
+      >
+        <source src="/hero-video.mp4" type="video/mp4" />
+        Browser Anda tidak mendukung pemutaran video.
+      </video>
+      
+      <div class="hero-overlay">
+        <span class="tag-red">EDISI TERBATAS 2026</span>
+        <h1 class="main-title">DE LARACHE<br>SIGNATURE</h1>
+        <button class="btn-buy-now">BELI SEKARANG</button>
       </div>
-    </header>
+    </section>
 
     <!-- State Loading -->
     <div v-if="loading" class="state-msg">
       <div class="spinner"></div>
-      <p>Loading Catalog...</p>
+      <p>LOADING CATALOG...</p>
     </div>
 
     <!-- Product Grid -->
-    <div v-else class="product-grid">
-      <div 
-        v-for="product in products" 
-        :key="product.id" 
-        class="product-card"
-        @click="openModal(product)"
-      >
-        <div class="image-wrapper">
-          <img :src="product.image" :alt="product.name" />
-          <span v-if="product.stock <= 0" class="out-stock-badge">OUT OF STOCK</span>
-        </div>
-        
-        <div class="card-body">
-          <div class="badge-wrapper">
-            <span class="category-badge">{{ product.category?.name || 'Streetwear' }}</span>
+    <div v-else class="catalog-section">
+      <h2 class="section-title">
+        {{ currentSearchQuery ? `HASIL PENCARIAN: "${currentSearchQuery.toUpperCase()}"` : 'KOLEKSI UTAMA' }}
+      </h2>
+
+      <div v-if="filteredProducts.length > 0" class="product-grid">
+        <div 
+          v-for="product in filteredProducts" 
+          :key="product.id" 
+          class="product-card"
+          @click="openModal(product)"
+        >
+          <div class="image-wrapper">
+            <img :src="getImageUrl(product.image)" :alt="product.name" />
+            <span v-if="product.stock <= 0" class="out-stock-badge">OUT OF STOCK</span>
           </div>
           
-          <h3 class="product-title">{{ product.name }}</h3>
-          
-          <div class="card-footer">
-            <div class="price-stock-info">
-              <span class="price-label">Price</span>
-              <span class="price-value">Rp {{ Number(product.price).toLocaleString('id-ID') }}</span>
-              <span class="stock-info" :class="{ 'low-stock': product.stock > 0 && product.stock <= 5 }">
-                Stok: {{ product.stock ?? 0 }} pcs
-              </span>
+          <div class="card-body">
+            <div class="badge-wrapper">
+              <span class="category-badge">{{ product.category?.name || 'PARFUM' }}</span>
             </div>
             
-            <button 
-              @click.stop="addToCart(product.id)" 
-              class="btn-cart"
-              :disabled="product.stock <= 0"
-            >
-              {{ product.stock > 0 ? '+ Cart' : 'Sold Out' }}
-            </button>
+            <h3 class="product-title">{{ product.name }}</h3>
+            
+            <div class="card-footer">
+              <div class="price-stock-info">
+                <span class="price-value">Rp {{ Number(product.price).toLocaleString('id-ID') }}</span>
+                <span class="stock-info" :class="{ 'low-stock': product.stock > 0 && product.stock <= 5 }">
+                  Stok: {{ product.stock ?? 0 }}
+                </span>
+              </div>
+              
+              <button 
+                @click.stop="addToCart(product.id)" 
+                class="btn-cart"
+                :disabled="product.stock <= 0"
+              >
+                {{ product.stock > 0 ? '+ CART' : 'SOLD OUT' }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      <div v-else class="no-products-msg">
+        <p>PRODUK TIDAK DITEMUKAN</p>
+      </div>
     </div>
 
-    <!-- Modal Detail Produk Style Modern Luxury -->
+    <!-- Modal Detail Produk Style Minimalis / Streetwear -->
     <Transition name="fade">
       <div v-if="selectedProduct" class="modal-overlay" @click.self="closeModal">
-        <div class="modal-content">
+        <div class="modal-content-bape">
           <button class="close-btn" @click="closeModal">&times;</button>
           
-          <div class="modal-body">
-            <div class="modal-image-wrapper">
-              <img :src="selectedProduct.image" :alt="selectedProduct.name" />
+          <div class="modal-body-bape">
+            <!-- Sisi Kiri: Gambar Utama -->
+            <div class="main-image-container">
+              <img :src="activeImage || getImageUrl(selectedProduct.image)" :alt="selectedProduct.name" />
             </div>
             
-            <div class="modal-info">
-              <div>
-                <span class="category-badge modal-badge">{{ selectedProduct.category?.name || 'Streetwear' }}</span>
-                <h2 class="modal-title">{{ selectedProduct.name }}</h2>
-                <div class="modal-price">Rp {{ Number(selectedProduct.price).toLocaleString('id-ID') }}</div>
+            <!-- Sisi Kanan: Informasi Produk -->
+            <div class="product-info-container">
+              <h1 class="bape-title">{{ selectedProduct.name }}</h1>
+              <div class="bape-price">
+                Rp {{ Number(selectedProduct.price).toLocaleString('id-ID') }},00
+              </div>
 
-                <!-- Informasi Stok di Modal -->
-                <div class="stock-status">
-                  <span class="stock-dot" :class="{ 'out': selectedProduct.stock <= 0, 'low': selectedProduct.stock > 0 && selectedProduct.stock <= 5 }"></span>
-                  <span v-if="selectedProduct.stock > 5">Tersedia {{ selectedProduct.stock }} unit</span>
-                  <span v-else-if="selectedProduct.stock > 0" class="text-warning">Sisa {{ selectedProduct.stock }} unit lagi!</span>
-                  <span v-else class="text-danger">Stok Habis</span>
-                </div>
-
-                <!-- Size Selector Option -->
-                <div class="size-selector">
-                  <label>Size</label>
-                  <select v-model="selectedSize">
-                    <option value="S">S</option>
-                    <option value="M">M</option>
-                    <option value="L">L</option>
-                    <option value="XL">XL</option>
-                  </select>
-                </div>
-
-                <div class="description-box">
-                  <h4>Description</h4>
-                  <p>{{ selectedProduct.description || 'A Bathing Ape streetwear collection with premium materials and signature design aesthetic.' }}</p>
+              <!-- Color / Variant Thumbnails Galeri -->
+              <div v-if="productImages.length > 0" class="color-thumbnails">
+                <div 
+                  v-for="(img, idx) in productImages" 
+                  :key="idx"
+                  class="thumb-box"
+                  :class="{ 'active': activeImage === img }"
+                  @click="activeImage = img"
+                >
+                  <img :src="img" alt="Variant thumbnail" />
                 </div>
               </div>
 
+              <!-- Size Selector Box Grid -->
+              <div class="size-section">
+                <label class="size-label">SIZE</label>
+                <div class="size-grid">
+                  <button 
+                    v-for="sizeOption in availableSizes" 
+                    :key="sizeOption"
+                    class="size-box"
+                    :class="{ 'active': selectedSize === sizeOption }"
+                    @click="selectedSize = sizeOption"
+                  >
+                    {{ sizeOption }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Main Action Button -->
               <button 
                 @click="addToCart(selectedProduct.id)" 
-                class="btn-add-bag"
+                class="btn-select-size"
                 :disabled="selectedProduct.stock <= 0"
               >
-                {{ selectedProduct.stock > 0 ? 'ADD TO BAG' : 'OUT OF STOCK' }}
+                {{ selectedProduct.stock > 0 ? (selectedSize ? `TAMBAH KE KERANJANG (${selectedSize})` : 'PILIH UKURAN') : 'STOK HABIS' }}
               </button>
             </div>
           </div>
@@ -115,17 +144,81 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import api from '../services/api';
 import { useAuthStore } from '../stores/auth';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 
 const products = ref([]);
 const loading = ref(true);
 const selectedProduct = ref(null);
+const activeImage = ref('');
 const selectedSize = ref('M');
+const availableSizes = ref(['S', 'M', 'L', 'XL', 'XXL']);
+const heroVideo = ref(null);
+
 const authStore = useAuthStore();
 const router = useRouter();
+const route = useRoute();
+
+// Ambil kata kunci pencarian dari URL
+const currentSearchQuery = computed(() => route.query.search || '');
+
+// Filter produk berdasarkan input pencarian
+const filteredProducts = computed(() => {
+  if (!currentSearchQuery.value) return products.value;
+  const query = currentSearchQuery.value.toLowerCase();
+  return products.value.filter(product => 
+    product.name.toLowerCase().includes(query) ||
+    (product.description && product.description.toLowerCase().includes(query))
+  );
+});
+
+// Computed parsing galeri foto produk
+const productImages = computed(() => {
+  if (!selectedProduct.value) return [];
+  
+  if (Array.isArray(selectedProduct.value.images) && selectedProduct.value.images.length > 0) {
+    return selectedProduct.value.images.map(img => typeof img === 'object' ? getImageUrl(img.image_path) : getImageUrl(img));
+  }
+  
+  return [getImageUrl(selectedProduct.value.image)];
+});
+
+// Function penanganan URL Gambar Backend
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return 'https://via.placeholder.com/300x300?text=No+Image';
+
+  if (typeof imagePath === 'string' && imagePath.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(imagePath);
+      imagePath = parsed[0] || '';
+    } catch (e) {
+      console.error('Gagal parse path gambar:', e);
+    }
+  }
+
+  if (typeof imagePath === 'string' && (imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
+    return imagePath;
+  }
+
+  const baseUrl = 'http://localhost:8000';
+  let cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  if (cleanPath.startsWith('/storage/')) {
+    cleanPath = cleanPath.replace('/storage/', '/');
+  }
+
+  return `${baseUrl}/storage${cleanPath}`;
+};
+
+const playVideo = () => {
+  if (heroVideo.value) {
+    heroVideo.value.muted = true;
+    heroVideo.value.play().catch((err) => {
+      console.warn('Autoplay video terhalang kebijakan browser:', err);
+    });
+  }
+};
 
 const fetchProducts = async () => {
   try {
@@ -140,6 +233,8 @@ const fetchProducts = async () => {
 
 const openModal = (product) => {
   selectedProduct.value = product;
+  selectedSize.value = product.size || 'M';
+  activeImage.value = getImageUrl(product.image);
 };
 
 const closeModal = () => {
@@ -166,93 +261,130 @@ const addToCart = async (productId) => {
 
 onMounted(() => {
   fetchProducts();
+  playVideo();
 });
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&display=swap');
 
-.bape-catalog {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: #e2e1dc;
+.delarache-catalog {
+  font-family: 'Montserrat', sans-serif;
+  background-color: #0d0d0d;
   min-height: 100vh;
-  padding: 40px 20px;
-  color: #111111;
+  color: #ffffff;
 }
 
-/* Hero Banner */
+/* Hero Section */
 .hero-banner {
-  text-align: center;
-  margin-bottom: 50px;
+  position: relative;
+  width: 100%;
+  height: 80vh;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
 }
 
-.sub-heading {
-  font-size: 11px;
-  letter-spacing: 3px;
-  font-weight: 700;
-  color: #666;
-  text-transform: uppercase;
+.hero-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+}
+
+.hero-overlay {
+  position: relative;
+  z-index: 2;
+  padding: 60px 40px;
+}
+
+.tag-red {
+  background-color: #e62129;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 5px 10px;
+  letter-spacing: 1.5px;
+  display: inline-block;
+  margin-bottom: 12px;
 }
 
 .main-title {
-  font-size: 42px;
+  font-size: 48px;
   font-weight: 900;
+  line-height: 1;
   letter-spacing: 2px;
-  margin: 8px 0;
+  margin-bottom: 20px;
+  color: #ffffff;
+  text-shadow: 2px 2px 0px #e62129, -2px -2px 0px #00ffff;
 }
 
-.tagline {
+.btn-buy-now {
+  background-color: #ffffff;
+  color: #000000;
+  border: none;
+  padding: 12px 28px;
   font-size: 12px;
-  letter-spacing: 3px;
-  color: #555;
-  font-weight: 600;
+  font-weight: 900;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
-.brand-badge {
-  margin-top: 15px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: #2b2a28;
-  border-radius: 50%;
-  font-size: 18px;
+.btn-buy-now:hover {
+  background-color: #e62129;
+  color: #ffffff;
 }
 
-/* Grid Layout */
-.product-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 24px;
+/* Catalog Grid */
+.catalog-section {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 50px 20px;
 }
 
-/* Card Styling */
+.section-title {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  margin-bottom: 30px;
+  border-left: 4px solid #e62129;
+  padding-left: 12px;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 24px;
+}
+
 .product-card {
-  background: #f4f3ef;
-  border-radius: 12px;
+  background: #141414;
+  border: 1px solid #222;
+  border-radius: 4px;
   padding: 12px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  transition: transform 0.3s;
 }
 
 .product-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+  transform: translateY(-5px);
+  border-color: #444;
 }
 
 .image-wrapper {
   position: relative;
   width: 100%;
-  height: 240px;
-  background: #e7e6e0;
-  border-radius: 8px;
+  height: 250px;
+  background: #1a1a1a;
   overflow: hidden;
 }
 
@@ -266,12 +398,11 @@ onMounted(() => {
   position: absolute;
   top: 10px;
   left: 10px;
-  background: rgba(0,0,0,0.7);
+  background: #e62129;
   color: #fff;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 800;
   padding: 4px 8px;
-  border-radius: 4px;
 }
 
 .card-body {
@@ -283,31 +414,25 @@ onMounted(() => {
 }
 
 .category-badge {
-  background: #c8b282;
-  color: #ffffff;
+  color: #e62129;
   font-size: 9px;
   font-weight: 800;
-  padding: 4px 10px;
-  border-radius: 12px;
   letter-spacing: 1px;
-  display: inline-block;
 }
 
 .product-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
-  margin: 10px 0;
-  text-transform: uppercase;
+  margin: 8px 0;
+  color: #fff;
   letter-spacing: 0.5px;
-  color: #111;
-  line-height: 1.3;
 }
 
 .card-footer {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .price-stock-info {
@@ -315,239 +440,250 @@ onMounted(() => {
   flex-direction: column;
 }
 
-.price-label {
-  font-size: 10px;
-  color: #888;
-}
-
 .price-value {
   font-size: 14px;
   font-weight: 800;
-  color: #111;
+  color: #fff;
 }
 
 .stock-info {
   font-size: 10px;
-  color: #666;
+  color: #888;
   margin-top: 2px;
-  font-weight: 600;
 }
 
 .stock-info.low-stock {
-  color: #d97706;
+  color: #f59e0b;
 }
 
 .btn-cart {
-  background: #111111;
-  color: #ffffff;
+  background: #ffffff;
+  color: #000000;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 700;
+  padding: 8px 14px;
+  font-size: 10px;
+  font-weight: 900;
   cursor: pointer;
-  transition: background 0.2s;
 }
 
 .btn-cart:hover:not(:disabled) {
-  background: #333333;
+  background: #e62129;
+  color: #fff;
 }
 
 .btn-cart:disabled {
-  background: #aaa;
+  background: #444;
+  color: #888;
   cursor: not-allowed;
 }
 
-/* Modal Overlay & Card */
+.no-products-msg {
+  text-align: center;
+  padding: 40px 0;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #888888;
+}
+
+/* Modal Styling Minimalis Clean White */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 999;
 }
 
-.modal-content {
+.modal-content-bape {
   background: #ffffff;
-  border-radius: 16px;
+  color: #000000;
   width: 90%;
-  max-width: 680px;
-  padding: 24px;
+  max-width: 900px;
+  padding: 40px;
   position: relative;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
 }
 
 .close-btn {
   position: absolute;
-  top: 16px;
+  top: 15px;
   right: 20px;
   border: none;
   background: transparent;
-  font-size: 24px;
+  font-size: 28px;
   cursor: pointer;
-  color: #666;
+  color: #000000;
 }
 
-.modal-body {
+.modal-body-bape {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 40px;
+  align-items: center;
 }
 
-@media (max-width: 640px) {
-  .modal-body {
+@media (max-width: 768px) {
+  .modal-body-bape {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
 }
 
-.modal-image-wrapper {
-  background: #f4f3ef;
-  border-radius: 12px;
-  overflow: hidden;
-  height: 300px;
-}
-
-.modal-image-wrapper img {
+.main-image-container {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: 380px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #fafafa;
 }
 
-.modal-info {
+.main-image-container img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.product-info-container {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
 }
 
-.modal-title {
-  font-size: 18px;
-  font-weight: 900;
-  margin: 8px 0;
-  text-transform: uppercase;
-}
-
-.modal-price {
-  font-size: 16px;
-  font-weight: 800;
+.bape-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #000000;
   margin-bottom: 8px;
+  line-height: 1.3;
 }
 
-.stock-status {
+.bape-price {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111111;
+  margin-bottom: 24px;
+}
+
+.color-thumbnails {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.thumb-box {
+  width: 60px;
+  height: 60px;
+  border: 1px solid #e5e5e5;
+  cursor: pointer;
+  padding: 4px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  margin-bottom: 15px;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
-.stock-dot {
-  width: 8px;
-  height: 8px;
-  background-color: #10b981;
-  border-radius: 50%;
+.thumb-box.active, .thumb-box:hover {
+  border: 2px solid #000000;
 }
 
-.stock-dot.low {
-  background-color: #f59e0b;
-}
-
-.stock-dot.out {
-  background-color: #ef4444;
-}
-
-.text-warning { color: #d97706; }
-.text-danger { color: #ef4444; }
-
-.size-selector {
-  margin-bottom: 15px;
-}
-
-.size-selector label {
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  margin-bottom: 4px;
-  color: #444;
-}
-
-.size-selector select {
+.thumb-box img {
   width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  background: #f8fafc;
+  height: 100%;
+  object-fit: contain;
+}
+
+.size-section {
+  margin-bottom: 30px;
+}
+
+.size-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  color: #000000;
+}
+
+.size-grid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.size-box {
+  width: 48px;
+  height: 48px;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  color: #000000;
   font-weight: 600;
-  outline: none;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
-.description-box h4 {
-  font-size: 11px;
-  font-weight: 700;
-  margin-bottom: 4px;
-  color: #444;
+.size-box:hover {
+  border-color: #a3a3a3;
 }
 
-.description-box p {
-  font-size: 11px;
-  color: #666;
-  line-height: 1.5;
+.size-box.active {
+  border: 2px solid #000000;
+  font-weight: 800;
 }
 
-.btn-add-bag {
-  background: #c8b282;
+.btn-select-size {
+  width: 100%;
+  background: #000000;
   color: #ffffff;
   border: none;
-  width: 100%;
-  padding: 12px;
-  border-radius: 8px;
-  font-weight: 800;
-  font-size: 12px;
-  letter-spacing: 1px;
+  padding: 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
   cursor: pointer;
-  margin-top: 15px;
-  transition: background 0.2s;
+  transition: background 0.3s ease;
 }
 
-.btn-add-bag:hover:not(:disabled) {
-  background: #b59f6f;
+.btn-select-size:hover:not(:disabled) {
+  background: #222222;
 }
 
-.btn-add-bag:disabled {
-  background: #ccc;
+.btn-select-size:disabled {
+  background: #cccccc;
   cursor: not-allowed;
 }
 
-/* Animations */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.25s ease;
-}
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
-}
-
-/* Spinner */
+/* Loading Spinner */
 .state-msg {
   text-align: center;
   padding: 60px 0;
-  color: #666;
+  color: #fff;
 }
+
 .spinner {
   width: 28px;
   height: 28px;
-  border: 3px solid #ccc;
-  border-top-color: #111;
+  border: 3px solid #333;
+  border-top-color: #e62129;
   border-radius: 50%;
   margin: 0 auto 12px auto;
   animation: spin 0.8s linear infinite;
 }
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.25s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

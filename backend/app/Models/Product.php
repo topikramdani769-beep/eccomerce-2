@@ -2,11 +2,23 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
 {
-    protected $fillable = ['category_id', 'name', 'price', 'stock', 'image'];
+    use HasFactory;
+
+    // Masukkan 'size' dan 'description' ke dalam $fillable
+    protected $fillable = [
+        'category_id',
+        'name',
+        'price',
+        'stock',
+        'size',
+        'image',
+        'description',
+    ];
 
     // Relasi: Produk milik 1 kategori
     public function category()

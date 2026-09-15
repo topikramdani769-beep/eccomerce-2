@@ -417,11 +417,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap');
 
 .admin-page {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: #e2e1dc;
+  font-family: 'Montserrat', sans-serif;
+  background-color: #f4f5f7;
   min-height: calc(100vh - 70px);
   padding: 40px 20px;
   color: #111111;
@@ -450,10 +450,11 @@ onMounted(() => {
 }
 
 .admin-header h2 {
-  font-family: 'Oswald', sans-serif;
-  font-size: 28px;
+  font-size: 26px;
+  font-weight: 900;
   letter-spacing: 2px;
   margin: 0;
+  color: #111111;
 }
 
 .tab-buttons {
@@ -462,23 +463,29 @@ onMounted(() => {
 }
 
 .tab-buttons button {
-  font-family: 'Oswald', sans-serif;
-  background: #f4f3ef;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  color: #111111;
-  padding: 8px 18px;
+  background: #ffffff;
+  border: 1.5px solid #e0e0e0;
+  color: #555555;
+  padding: 10px 20px;
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 1.5px;
-  font-size: 13px;
-  border-radius: 6px;
+  font-size: 11px;
+  border-radius: 4px;
   transition: all 0.2s ease;
 }
 
 .tab-buttons button.active {
   background: #111111;
-  color: #c8b282;
+  color: #ffffff;
   border-color: #111111;
+}
+
+.tab-content h3 {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #111111;
 }
 
 .admin-actions {
@@ -488,44 +495,38 @@ onMounted(() => {
   margin-bottom: 20px;
 }
 
-.admin-actions h3 {
-  font-family: 'Oswald', sans-serif;
-  font-size: 20px;
-  letter-spacing: 1px;
-}
-
 .btn-action {
-  font-family: 'Oswald', sans-serif;
   background: #111111;
   color: #ffffff;
   border: none;
   padding: 10px 20px;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 800;
   letter-spacing: 1.5px;
   cursor: pointer;
-  border-radius: 6px;
-  transition: background 0.2s;
+  border-radius: 4px;
+  transition: background 0.2s ease;
 }
 
 .btn-action:hover {
-  background: #c8b282;
-  color: #111111;
+  background: #e62129;
+  color: #ffffff;
 }
 
 .admin-form {
-  background: #f4f3ef;
-  padding: 24px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 10px;
+  background: #ffffff;
+  padding: 28px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .admin-form h4 {
-  font-family: 'Oswald', sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
   margin-bottom: 20px;
-  color: #8f794b;
-  font-size: 18px;
-  letter-spacing: 1px;
+  color: #111111;
 }
 
 .form-grid {
@@ -542,47 +543,58 @@ onMounted(() => {
 
 .form-group label {
   display: block;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
   margin-bottom: 6px;
   text-transform: uppercase;
+  color: #555555;
 }
 
 .form-control {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 6px;
-  background: #ffffff;
+  border: 1.5px solid #dcdcdc;
+  border-radius: 4px;
+  background: #f8f9fa;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111111;
   box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: #e62129;
+  box-shadow: 0 0 0 3px rgba(230, 33, 41, 0.1);
 }
 
 .btn-submit {
-  font-family: 'Oswald', sans-serif;
   background: #111111;
   color: #ffffff;
   border: none;
   padding: 12px;
-  font-size: 13px;
-  letter-spacing: 2px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
   cursor: pointer;
-  border-radius: 6px;
-  transition: background 0.2s;
+  border-radius: 4px;
+  transition: background 0.2s ease;
 }
 
 .btn-submit:hover {
-  background: #c8b282;
-  color: #111111;
+  background: #e62129;
+  color: #ffffff;
 }
 
 .table-responsive {
   overflow-x: auto;
-  background: #f4f3ef;
-  border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+  border-radius: 6px;
+  border: 1.5px solid #e0e0e0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
@@ -592,39 +604,45 @@ onMounted(() => {
 }
 
 .admin-table th {
-  font-family: 'Oswald', sans-serif;
   background: #111111;
   color: #ffffff;
   padding: 14px 16px;
   text-align: left;
-  font-size: 13px;
+  font-size: 11px;
+  font-weight: 800;
   letter-spacing: 1.5px;
 }
 
 .admin-table td {
   padding: 14px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid #eeeeee;
   font-size: 13px;
+  font-weight: 600;
 }
 
 .font-bold {
   font-weight: 800;
+  color: #111111;
 }
 
 .badge-cat {
-  font-family: 'Oswald', sans-serif;
-  font-size: 11px;
-  color: #8f794b;
+  font-size: 10px;
+  color: #ffffff;
+  background-color: #e62129;
   letter-spacing: 1px;
-  font-weight: 700;
+  font-weight: 800;
+  padding: 2px 6px;
+  text-transform: uppercase;
+  border-radius: 2px;
 }
 
 .table-img {
   width: 48px;
   height: 48px;
   object-fit: cover;
-  border-radius: 6px;
-  background: #e2e1dc;
+  border-radius: 4px;
+  background: #f8f9fa;
+  border: 1px solid #eee;
 }
 
 .action-buttons {
@@ -634,66 +652,74 @@ onMounted(() => {
 
 .btn-edit {
   background: none;
-  border: 1px solid #8f794b;
-  color: #8f794b;
+  border: 1.5px solid #111111;
+  color: #111111;
   padding: 6px 12px;
-  font-weight: 700;
-  font-size: 11px;
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 1px;
   cursor: pointer;
   border-radius: 4px;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .btn-edit:hover {
-  background: #8f794b;
+  background: #111111;
   color: #ffffff;
 }
 
 .btn-delete {
   background: none;
-  border: 1px solid #dc2626;
-  color: #dc2626;
+  border: 1.5px solid #e62129;
+  color: #e62129;
   padding: 6px 12px;
-  font-weight: 700;
-  font-size: 11px;
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 1px;
   cursor: pointer;
   border-radius: 4px;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .btn-delete:hover {
-  background: #dc2626;
+  background: #e62129;
   color: #ffffff;
 }
 
 .status-select {
-  background: #ffffff;
+  background: #f8f9fa;
   color: #111111;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  border: 1.5px solid #dcdcdc;
   padding: 6px 10px;
   border-radius: 4px;
   font-size: 12px;
   font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.status-select:focus {
+  outline: none;
+  border-color: #e62129;
 }
 
 .status-tag {
-  font-family: 'Oswald', sans-serif;
-  font-size: 11px;
+  font-size: 10px;
   padding: 4px 8px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 1px;
-  border-radius: 4px;
+  border-radius: 2px;
 }
 
-.status-tag.pending { background: #fef3c7; color: #d97706; }
-.status-tag.paid { background: #d1fae5; color: #059669; }
-.status-tag.cancelled { background: #fee2e2; color: #dc2626; }
+.status-tag.pending { background: #f59e0b; color: #ffffff; }
+.status-tag.paid { background: #10b981; color: #ffffff; }
+.status-tag.cancelled { background: #e62129; color: #ffffff; }
 
 .mt-4 { margin-top: 16px; }
 .mt-6 { margin-top: 24px; }
 .w-full { width: 100%; }
 
-/* --- CSS ANIMASI HAPUS & TAMBAH --- */
+/* Animation */
 .fade-row-enter-active,
 .fade-row-leave-active {
   transition: all 0.4s ease;
@@ -707,7 +733,7 @@ onMounted(() => {
 .fade-row-leave-to {
   opacity: 0;
   transform: translateX(30px);
-  background-color: rgba(239, 68, 68, 0.15);
+  background-color: rgba(230, 33, 41, 0.15);
 }
 
 .fade-row-move {

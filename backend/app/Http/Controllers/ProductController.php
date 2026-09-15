@@ -8,17 +8,15 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    // Fetch Produk dengan Filter, Search, & Pagination
+    // Fetch Produk dengan Filter & Search
     public function index(Request $request)
     {
         $query = Product::with('category');
 
-        // Filter berdasarkan pencarian nama
         if ($request->has('search') && $request->search != '') {
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
-        // Filter berdasarkan category_id
         if ($request->has('category_id') && $request->category_id != '') {
             $query->where('category_id', $request->category_id);
         }
@@ -36,12 +34,22 @@ class ProductController extends Controller
             'name'        => 'required|string|max:255',
             'price'       => 'required|numeric|min:0',
             'stock'       => 'required|integer|min:0',
-            'image'       => 'nullable', // BISA FILE / STRING URL
+            'size'        => 'nullable|string',
+            'description' => 'nullable|string',
+            'images.*'    => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'image'       => 'nullable',
         ]);
 
-        // Cek apakah ada file gambar yang di-upload
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('products', 'public');
+        // Fleksibel: Deteksi file baik dari 'images' (array Vue) maupun 'image' (single)
+        $file = null;
+        if ($request->hasFile('images')) {
+            $file = $request->file('images')[0];
+        } elseif ($request->hasFile('image')) {
+            $file = $request->file('image');
+        }
+
+        if ($file) {
+            $path = $file->store('products', 'public');
             $validated['image'] = url('storage/' . $path);
         }
 
@@ -66,18 +74,28 @@ class ProductController extends Controller
             'name'        => 'sometimes|string|max:255',
             'price'       => 'sometimes|numeric|min:0',
             'stock'       => 'sometimes|integer|min:0',
+            'size'        => 'nullable|string',
+            'description' => 'nullable|string',
+            'images.*'    => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'image'       => 'nullable',
         ]);
 
-        // Handle upload gambar baru
-        if ($request->hasFile('image')) {
+        // Fleksibel: Deteksi file baru yang diunggah
+        $file = null;
+        if ($request->hasFile('images')) {
+            $file = $request->file('images')[0];
+        } elseif ($request->hasFile('image')) {
+            $file = $request->file('image');
+        }
+
+        if ($file) {
             // Hapus gambar lama jika tersimpan di local storage
             if ($product->image && str_contains($product->image, 'storage/products/')) {
                 $oldPath = str_replace(url('storage/'), '', $product->image);
                 Storage::disk('public')->delete($oldPath);
             }
 
-            $path = $request->file('image')->store('products', 'public');
+            $path = $file->store('products', 'public');
             $validated['image'] = url('storage/' . $path);
         }
 
@@ -92,7 +110,6 @@ class ProductController extends Controller
     // Hapus Produk
     public function destroy(Product $product)
     {
-        // Hapus file gambar dari storage jika ada
         if ($product->image && str_contains($product->image, 'storage/products/')) {
             $oldPath = str_replace(url('storage/'), '', $product->image);
             Storage::disk('public')->delete($oldPath);
