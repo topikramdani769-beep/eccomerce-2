@@ -1,5 +1,15 @@
 <template>
   <div class="delarache-auth-page">
+    <!-- VIDEO BACKGROUND -->
+    <video class="bg-video" autoplay loop muted playsinline>
+      <source src="/hero-bg.mp4" type="video/mp4" />
+      Browser Anda tidak mendukung video HTML5.
+    </video>
+
+    <!-- Overlay Gelap -->
+    <div class="video-overlay"></div>
+
+    <!-- KARTU FORM REGISTER -->
     <div class="auth-card">
       <div class="brand-header">
         <span class="tag-red">MEMBER ACCESS</span>
@@ -143,25 +153,52 @@ const handleRegister = async () => {
 
 .delarache-auth-page {
   font-family: 'Montserrat', sans-serif;
-  /* Background abu-abu terang seragam dengan Login */
-  background-color: #f4f5f7;
+  position: relative;
   min-height: 100vh;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 30px 20px;
-  color: #111111;
+  overflow: hidden;
+}
+
+/* STYLE UNTUK VIDEO BACKGROUND FULLSCREEN */
+.bg-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+}
+
+/* LAPISAN OVERLAY HITAM TRANSPARAN */
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2;
 }
 
 .auth-card {
-  /* Kartu berwarna putih bersih dengan border netral */
-  background: #ffffff;
+  position: relative;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
   border: 1.5px solid #e0e0e0;
   border-radius: 6px;
   padding: 40px 32px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   animation: fadeIn 0.4s ease-out;
 }
 
