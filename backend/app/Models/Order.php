@@ -33,4 +33,10 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+
+    // Tambahkan relasi ini untuk mencocokkan panggillan orderItems
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
 }

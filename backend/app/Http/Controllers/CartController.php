@@ -39,6 +39,26 @@ class CartController extends Controller
         ], 201);
     }
 
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'quantity' => 'required|integer|min:1'
+        ]);
+
+        $cart = Cart::where('user_id', $request->user()->id)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $cart->update([
+            'quantity' => $request->quantity
+        ]);
+
+        return response()->json([
+            'message' => 'Jumlah item berhasil diperbarui',
+            'cart'    => $cart
+        ], 200);
+    }
+
     public function destroy(Request $request, $id)
     {
         Cart::where('user_id', $request->user()->id)

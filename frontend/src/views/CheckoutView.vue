@@ -109,11 +109,23 @@ const fetchData = async () => {
       api.get('/payment-methods')
     ]);
 
-    // Menangani format array langsung (res.data) maupun yang terbungkus (res.data.data)
-    const rawCart = cartRes.data?.data || cartRes.data || [];
+    // Fleksibel menangani berbagai bentuk payload JSON dari Backend
+    const rawCartData = cartRes.data;
+    let extractedCart = [];
+
+    if (Array.isArray(rawCartData)) {
+      extractedCart = rawCartData;
+    } else if (Array.isArray(rawCartData?.data)) {
+      extractedCart = rawCartData.data;
+    } else if (Array.isArray(rawCartData?.cart_items)) {
+      extractedCart = rawCartData.cart_items;
+    } else if (Array.isArray(rawCartData?.items)) {
+      extractedCart = rawCartData.items;
+    }
+
     const rawPayment = paymentRes.data?.data || paymentRes.data || [];
 
-    cartItems.value = Array.isArray(rawCart) ? rawCart : [];
+    cartItems.value = extractedCart;
     paymentMethods.value = Array.isArray(rawPayment) ? rawPayment : [];
 
     if (paymentMethods.value.length > 0) {

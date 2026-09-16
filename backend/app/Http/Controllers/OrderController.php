@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Cart;
+use App\Events\OrderCreated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
@@ -33,44 +35,56 @@ class OrderController extends Controller
             }
         }
 
-        // Hitung Total Belanja
-        $total = $carts->sum(fn($item) => $item->product->price * $item->quantity);
+        // Gunakan Database Transaction agar aman dari error saat pemprosesan
+        $order = DB::transaction(function () use ($user, $request, $carts) {
+            // Hitung Total Belanja
+            $total = $carts->sum(fn($item) => $item->product->price * $item->quantity);
 
-        // 1. Buat Order
-        $order = Order::create([
-            'user_id'           => $user->id,
-            'payment_method_id' => $request->payment_method_id,
-            'shipping_address'  => $request->shipping_address,
-            'order_number'      => 'ORD-' . strtoupper(Str::random(10)),
-            'total_amount'      => $total,
-            'status'            => 'pending'
-        ]);
-
-        // 2. Pindahkan item keranjang ke OrderItem & Potong Stok
-        foreach ($carts as $cart) {
-            OrderItem::create([
-                'order_id'   => $order->id,
-                'product_id' => $cart->product_id,
-                'quantity'   => $cart->quantity,
-                'price'      => $cart->product->price
+            // 1. Buat Order
+            $order = Order::create([
+                'user_id'           => $user->id,
+                'payment_method_id' => $request->payment_method_id,
+                'shipping_address'  => $request->shipping_address,
+                'order_number'      => 'ORD-' . strtoupper(Str::random(10)),
+                'total_amount'      => $total,
+                'status'            => 'pending'
             ]);
 
-            // Potong Stok Produk
-            $cart->product->decrement('stock', $cart->quantity);
-        }
+            // 2. Pindahkan item keranjang ke OrderItem & Potong Stok
+            foreach ($carts as $cart) {
+                OrderItem::create([
+                    'order_id'   => $order->id,
+                    'product_id' => $cart->product_id,
+                    'quantity'   => $cart->quantity,
+                    'price'      => $cart->product->price
+                ]);
 
-        // 3. Kosongkan keranjang user
-        Cart::where('user_id', $user->id)->delete();
+                // Potong Stok Produk
+                $cart->product->decrement('stock', $cart->quantity);
+            }
+
+            // 3. Kosongkan keranjang user
+            Cart::where('user_id', $user->id)->delete();
+
+            return $order;
+        });
+
+        // 4. Load relasi lengkap (menggunakan 'items' atau 'orderItems' sesuai model)
+        $order->load(['user', 'items.product', 'paymentMethod']);
+
+        // 5. Trigger Broadcast Event ke Admin 🚀
+        event(new OrderCreated($order));
 
         return response()->json([
             'message' => 'Checkout berhasil dibuat',
-            'order'   => $order->load(['items.product', 'paymentMethod'])
+            'order'   => $order
         ], 201);
     }
 
     // Riwayat Order Pengguna
     public function index(Request $request)
     {
+        // Mengubah 'orderItems.product' menjadi 'items.product'
         $orders = Order::with(['items.product', 'paymentMethod'])
             ->where('user_id', $request->user()->id)
             ->latest()
@@ -86,6 +100,7 @@ class OrderController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
+        // Mengubah 'orderItems.product' menjadi 'items.product'
         return response()->json($order->load(['items.product', 'paymentMethod']), 200);
     }
-}
+}       

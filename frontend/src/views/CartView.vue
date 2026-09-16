@@ -216,7 +216,6 @@ onMounted(() => {
   }
 }
 
-/* Cart Items */
 .cart-item {
   background-color: #ffffff;
   border: 1.5px solid #e0e0e0;
@@ -284,7 +283,6 @@ onMounted(() => {
   gap: 20px;
 }
 
-/* Quantity Control */
 .qty-control {
   display: flex;
   align-items: center;
@@ -338,7 +336,6 @@ onMounted(() => {
   opacity: 0.6;
 }
 
-/* Order Summary */
 .cart-summary {
   background-color: #ffffff;
   border: 1.5px solid #e0e0e0;

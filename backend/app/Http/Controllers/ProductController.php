@@ -36,6 +36,7 @@ class ProductController extends Controller
             'stock'       => 'required|integer|min:0',
             'size'        => 'nullable|string',
             'description' => 'nullable|string',
+            'images'      => 'nullable|array', // Harus ada deklarasi array untuk induknya
             'images.*'    => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'image'       => 'nullable',
         ]);
@@ -53,6 +54,9 @@ class ProductController extends Controller
             $validated['image'] = url('storage/' . $path);
         }
 
+        // Clean up array images dari payload agar tidak masuk ke mass-assignment Eloquent jika kolomnya tidak ada
+        unset($validated['images']);
+
         $product = Product::create($validated);
 
         return response()->json([
@@ -61,14 +65,17 @@ class ProductController extends Controller
         ], 201);
     }
 
-    public function show(Product $product)
+    public function show($id)
     {
-        return response()->json($product->load('category'), 200);
+        $product = Product::with('category')->findOrFail($id);
+        return response()->json($product, 200);
     }
 
     // Update Produk
-    public function update(Request $request, Product $product)
+    public function update(Request $request, $id)
     {
+        $product = Product::findOrFail($id);
+
         $validated = $request->validate([
             'category_id' => 'sometimes|exists:categories,id',
             'name'        => 'sometimes|string|max:255',
@@ -76,6 +83,7 @@ class ProductController extends Controller
             'stock'       => 'sometimes|integer|min:0',
             'size'        => 'nullable|string',
             'description' => 'nullable|string',
+            'images'      => 'nullable|array', // Deklarasi tipe array
             'images.*'    => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'image'       => 'nullable',
         ]);
@@ -99,6 +107,8 @@ class ProductController extends Controller
             $validated['image'] = url('storage/' . $path);
         }
 
+        unset($validated['images']);
+
         $product->update($validated);
 
         return response()->json([
@@ -108,8 +118,10 @@ class ProductController extends Controller
     }
 
     // Hapus Produk
-    public function destroy(Product $product)
+    public function destroy($id)
     {
+        $product = Product::findOrFail($id);
+
         if ($product->image && str_contains($product->image, 'storage/products/')) {
             $oldPath = str_replace(url('storage/'), '', $product->image);
             Storage::disk('public')->delete($oldPath);

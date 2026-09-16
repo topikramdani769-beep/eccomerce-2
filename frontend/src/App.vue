@@ -127,7 +127,7 @@
                   class="result-item"
                   @click="selectProduct(product)"
                 >
-                  <img :src="product.image_url || '/placeholder.jpg'" :alt="product.name" class="result-img" />
+                  <img :src="getImageUrl(product.image || product.image_url)" :alt="product.name" class="result-img" />
                   <div class="result-info">
                     <span class="result-name">{{ product.name }}</span>
                     <span class="result-price">Rp {{ Number(product.price).toLocaleString('id-ID') }}</span>
@@ -153,7 +153,7 @@
             
             <div class="modal-grid">
               <div class="modal-image-col">
-                <img :src="selectedProduct.image_url || '/placeholder.jpg'" :alt="selectedProduct.name" class="modal-img" />
+                <img :src="getImageUrl(selectedProduct.image || selectedProduct.image_url)" :alt="selectedProduct.name" class="modal-img" />
               </div>
 
               <div class="modal-info-col">
@@ -189,7 +189,7 @@ const isSearchOpen = ref(false);
 const isSearching = ref(false);
 const searchResults = ref([]);
 const searchInputRef = ref(null);
-const selectedProduct = ref(null); // State simpan data produk terpilih untuk modal
+const selectedProduct = ref(null);
 let searchDebounce = null;
 
 const authStore = useAuthStore();
@@ -203,6 +203,33 @@ const showNavbar = computed(() => {
   const hiddenRoutes = ['/login', '/register'];
   return !hiddenRoutes.includes(route.path);
 });
+
+// Helper untuk format URL Gambar dari Backend Laravel
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return 'https://via.placeholder.com/150?text=No+Image';
+
+  let path = imagePath;
+  if (typeof path === 'string' && path.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(path);
+      path = parsed[0] || '';
+    } catch (e) {
+      console.error('Gagal parse JSON gambar:', e);
+    }
+  }
+
+  if (typeof path === 'string' && (path.startsWith('http://') || path.startsWith('https://'))) {
+    return path;
+  }
+
+  const baseUrl = 'http://localhost:8000';
+  let cleanPath = typeof path === 'string' && path.startsWith('/') ? path : `/${path}`;
+  if (cleanPath.startsWith('/storage/')) {
+    cleanPath = cleanPath.replace('/storage/', '/');
+  }
+
+  return `${baseUrl}/storage${cleanPath}`;
+};
 
 const openSearch = async () => {
   isSearchOpen.value = true;
@@ -245,20 +272,17 @@ const handleLiveSearch = () => {
   }, 300);
 };
 
-// Fungsi saat hasil pencarian di-klik
 const selectProduct = (product) => {
-  selectedProduct.value = product; // Set data produk
-  closeSearch(); // Tutup search drawer
-  document.body.style.overflow = 'hidden'; // Tetap kunci scroll belakang
+  selectedProduct.value = product;
+  closeSearch();
+  document.body.style.overflow = 'hidden';
 };
 
-// Tutup Modal Detail Produk
 const closeDetailModal = () => {
   selectedProduct.value = null;
   document.body.style.overflow = '';
 };
 
-// Tambah ke Keranjang
 const addToCart = (product) => {
   alert(`Produk ${product.name} berhasil ditambahkan ke keranjang!`);
   closeDetailModal();
@@ -471,6 +495,7 @@ const handleLogout = async () => {
   object-fit: cover;
   border-radius: 2px;
   border: 1px solid #eeeeee;
+  background-color: #f9f9f9;
 }
 
 .result-info {

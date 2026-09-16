@@ -6,7 +6,7 @@
         ref="heroVideo"
         autoplay 
         loop 
-        muted 
+        :muted="isMuted" 
         playsinline 
         preload="auto"
         class="hero-video"
@@ -20,6 +20,24 @@
         <span class="tag-red">EDISI TERBATAS 2026</span>
         <h1 class="main-title">DE LARACHE<br>SIGNATURE</h1>
         <button class="btn-buy-now">BELI SEKARANG</button>
+
+        <!-- Tombol Toggle Suara Video -->
+        <button 
+          @click="toggleMute" 
+          class="btn-sound-toggle" 
+          :aria-label="isMuted ? 'Unmute Video' : 'Mute Video'"
+        >
+          <svg v-if="isMuted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sound-icon">
+            <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sound-icon">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+          <span>{{ isMuted ? 'SOUND OFF' : 'SOUND ON' }}</span>
+        </button>
       </div>
     </section>
 
@@ -79,7 +97,7 @@
       </div>
     </div>
 
-    <!-- Modal Detail Produk Style Minimalis / Streetwear -->
+    <!-- Modal Detail Produk -->
     <Transition name="fade">
       <div v-if="selectedProduct" class="modal-overlay" @click.self="closeModal">
         <div class="modal-content-bape">
@@ -155,16 +173,33 @@ const selectedProduct = ref(null);
 const activeImage = ref('');
 const selectedSize = ref('M');
 const availableSizes = ref(['S', 'M', 'L', 'XL', 'XXL']);
+
 const heroVideo = ref(null);
+const isMuted = ref(true); // Default muted agar diizinkan autoplay oleh browser
 
 const authStore = useAuthStore();
 const router = useRouter();
 const route = useRoute();
 
-// Ambil kata kunci pencarian dari URL
+// Toggle Suara Video
+const toggleMute = () => {
+  isMuted.value = !isMuted.value;
+  if (heroVideo.value) {
+    heroVideo.value.muted = isMuted.value;
+  }
+};
+
+const playVideo = () => {
+  if (heroVideo.value) {
+    heroVideo.value.muted = isMuted.value;
+    heroVideo.value.play().catch((err) => {
+      console.warn('Autoplay video terhalang kebijakan browser:', err);
+    });
+  }
+};
+
 const currentSearchQuery = computed(() => route.query.search || '');
 
-// Filter produk berdasarkan input pencarian
 const filteredProducts = computed(() => {
   if (!currentSearchQuery.value) return products.value;
   const query = currentSearchQuery.value.toLowerCase();
@@ -174,7 +209,6 @@ const filteredProducts = computed(() => {
   );
 });
 
-// Computed parsing galeri foto produk
 const productImages = computed(() => {
   if (!selectedProduct.value) return [];
   
@@ -185,7 +219,6 @@ const productImages = computed(() => {
   return [getImageUrl(selectedProduct.value.image)];
 });
 
-// Function penanganan URL Gambar Backend
 const getImageUrl = (imagePath) => {
   if (!imagePath) return 'https://via.placeholder.com/300x300?text=No+Image';
 
@@ -209,15 +242,6 @@ const getImageUrl = (imagePath) => {
   }
 
   return `${baseUrl}/storage${cleanPath}`;
-};
-
-const playVideo = () => {
-  if (heroVideo.value) {
-    heroVideo.value.muted = true;
-    heroVideo.value.play().catch((err) => {
-      console.warn('Autoplay video terhalang kebijakan browser:', err);
-    });
-  }
 };
 
 const fetchProducts = async () => {
@@ -302,6 +326,7 @@ onMounted(() => {
   position: relative;
   z-index: 2;
   padding: 60px 40px;
+  width: 100%;
 }
 
 .tag-red {
@@ -340,6 +365,38 @@ onMounted(() => {
 .btn-buy-now:hover {
   background-color: #e62129;
   color: #ffffff;
+}
+
+/* Tombol Toggle Sound */
+.btn-sound-toggle {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  background: rgba(20, 20, 20, 0.85);
+  color: #ffffff;
+  border: 1px solid #333333;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(4px);
+}
+
+.btn-sound-toggle:hover {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+}
+
+.sound-icon {
+  width: 14px;
+  height: 14px;
 }
 
 /* Catalog Grid */

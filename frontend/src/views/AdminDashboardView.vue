@@ -176,7 +176,7 @@
               <tr v-for="order in orders" :key="order.id">
                 <td class="font-bold">#{{ order.order_number || order.id }}</td>
                 <td>{{ order.user?.name || 'Guest' }}</td>
-                <td>Rp {{ Number(order.total_amount).toLocaleString('id-ID') }}</td>
+                <td>Rp {{ Number(order.total_amount || order.total_price || 0).toLocaleString('id-ID') }}</td>
                 <td>
                   <span :class="['status-tag', order.status]">{{ order.status ? order.status.toUpperCase() : 'PENDING' }}</span>
                 </td>
@@ -201,7 +201,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, watch } from 'vue';
 import api from '../services/api';
 
 const activeTab = ref('products');
@@ -231,8 +231,9 @@ const categoryForm = reactive({
   name: ''
 });
 
-// State Orders
+// State Orders & Timer Polling
 const orders = ref([]);
+let pollInterval = null;
 
 const handleFileUpload = (event) => {
   selectedFiles.value = Array.from(event.target.files);
@@ -296,6 +297,26 @@ const fetchOrders = async () => {
   }
 };
 
+// Manajemen Auto Polling Order
+const startPollingOrders = () => {
+  stopPollingOrders();
+  pollInterval = setInterval(() => {
+    if (activeTab.value === 'orders') {
+      fetchOrders();
+    }
+  }, 5000);
+};
+
+const stopPollingOrders = () => {
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
+};
+
+// ==========================================
+// PERBAIKAN PADA FUNGSI SAVEPRODUCT DI BAWAH
+// ==========================================
 const saveProduct = async () => {
   try {
     const formData = new FormData();
@@ -304,13 +325,15 @@ const saveProduct = async () => {
     formData.append('price', productForm.price);
     formData.append('stock', productForm.stock);
     formData.append('size', productForm.size);
-    
-    if (selectedFiles.value.length > 0) {
+
+    // Kirim file ke images[] HANYA JIKA ADA file yang dipilih
+    if (selectedFiles.value && selectedFiles.value.length > 0) {
       selectedFiles.value.forEach((file) => {
         formData.append('images[]', file);
       });
     }
 
+    // Deklarasikan Header Multipart secara eksplisit
     const config = {
       headers: {
         'Content-Type': 'multipart/form-data'
@@ -330,6 +353,7 @@ const saveProduct = async () => {
     resetProductForm();
     fetchProducts();
   } catch (e) {
+    console.error('Detail Error Backend:', e.response?.data);
     alert(e.response?.data?.message || 'Gagal menyimpan produk');
   }
 };
@@ -401,18 +425,38 @@ const updateOrderStatus = async (orderId, newStatus) => {
   }
 };
 
+// Monitor Perubahan Tab
 watch(activeTab, (newTab) => {
   if (newTab === 'products') {
     fetchProducts();
     fetchCategories();
+    stopPollingOrders();
   }
-  if (newTab === 'categories') fetchCategories();
-  if (newTab === 'orders') fetchOrders();
+  if (newTab === 'categories') {
+    fetchCategories();
+    stopPollingOrders();
+  }
+  if (newTab === 'orders') {
+    fetchOrders();
+    startPollingOrders();
+  }
 });
 
 onMounted(() => {
   fetchProducts();
   fetchCategories();
+  fetchOrders();
+
+  if (window.Echo) {
+    window.Echo.channel('admin-orders')
+      .listen('.OrderCreated', (e) => {
+        orders.value.unshift(e.order);
+      });
+  }
+});
+
+onUnmounted(() => {
+  stopPollingOrders();
 });
 </script>
 

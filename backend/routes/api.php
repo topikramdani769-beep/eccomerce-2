@@ -32,6 +32,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Cart
     Route::get('/cart', [CartController::class, 'index']);
     Route::post('/cart', [CartController::class, 'store']);
+    Route::put('/cart/{id}', [CartController::class, 'update']);
+    Route::patch('/cart/{id}', [CartController::class, 'update']);
     Route::delete('/cart/{id}', [CartController::class, 'destroy']);
 
     // Wishlist
@@ -55,9 +57,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/categories/{category}', [CategoryController::class, 'update']);
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
 
-        // Products Management (Support Multipart Form Data & Method Spoofing)
+        // Products Management (Dibuat match agar menerima POST, PUT, dan PATCH)
         Route::post('/products', [ProductController::class, 'store']);
-        Route::post('/products/{product}', [ProductController::class, 'update']);
+        Route::match(['post', 'put', 'patch'], '/products/{product}', [ProductController::class, 'update']);
         Route::delete('/products/{product}', [ProductController::class, 'destroy']);
 
         // Payment Methods Management
