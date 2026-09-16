@@ -9,13 +9,48 @@ import AdminDashboardView from '../views/AdminDashboardView.vue';
 import { useAuthStore } from '../stores/auth';
 
 const routes = [
-  { path: '/', name: 'Home', component: HomeView },
-  { path: '/login', name: 'Login', component: LoginView },
-  { path: '/register', name: 'Register', component: RegisterView },
-  { path: '/cart', name: 'Cart', component: CartView, meta: { requiresAuth: true } },
-  { path: '/checkout', name: 'Checkout', component: CheckoutView, meta: { requiresAuth: true } },
-  { path: '/orders', name: 'Orders', component: OrdersView, meta: { requiresAuth: true } },
-  { path: '/admin', name: 'AdminDashboard', component: AdminDashboardView, meta: { requiresAuth: true, requiresAdmin: true } },
+  { 
+    path: '/', 
+    name: 'Home', 
+    component: HomeView,
+    meta: { title: 'DE LARACHE - Official Store' }
+  },
+  { 
+    path: '/login', 
+    name: 'Login', 
+    component: LoginView,
+    meta: { title: 'Login - DE LARACHE' }
+  },
+  { 
+    path: '/register', 
+    name: 'Register', 
+    component: RegisterView,
+    meta: { title: 'Register - DE LARACHE' }
+  },
+  { 
+    path: '/cart', 
+    name: 'Cart', 
+    component: CartView, 
+    meta: { requiresAuth: true, title: 'Shopping Cart - DE LARACHE' } 
+  },
+  { 
+    path: '/checkout', 
+    name: 'Checkout', 
+    component: CheckoutView, 
+    meta: { requiresAuth: true, title: 'Checkout - DE LARACHE' } 
+  },
+  { 
+    path: '/orders', 
+    name: 'Orders', 
+    component: OrdersView, 
+    meta: { requiresAuth: true, title: 'My Orders - DE LARACHE' } 
+  },
+  { 
+    path: '/admin', 
+    name: 'AdminDashboard', 
+    component: AdminDashboardView, 
+    meta: { requiresAuth: true, requiresAdmin: true, title: 'Admin Dashboard - DE LARACHE' } 
+  },
 ];
 
 const router = createRouter({
@@ -26,19 +61,22 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
   
+  // 1. Ganti judul tab browser sesuai meta.title
+  document.title = to.meta.title || 'DE LARACHE';
+
   // Baca token dan user data dengan fallback ke LocalStorage jika Pinia state belum rehidrasi
   const token = authStore.token || localStorage.getItem('auth_token');
   const user = authStore.user || JSON.parse(localStorage.getItem('user_data') || 'null');
 
   if (to.meta.requiresAuth && !token) {
-    // 1. Jika butuh login tapi belum ada token -> Redirect ke Login
+    // Jika butuh login tapi belum ada token -> Redirect ke Login
     next({ name: 'Login' });
   } else if (to.meta.requiresAdmin && (!user || !user.is_admin)) {
-    // 2. Jika butuh akses Admin tapi user bukan Admin -> Lempar ke Home
+    // Jika butuh akses Admin tapi user bukan Admin -> Lempar ke Home
     alert('Akses ditolak! Halaman ini khusus Admin.');
     next({ name: 'Home' });
   } else {
-    // 3. Izin diberikan
+    // Izin diberikan
     next();
   }
 });

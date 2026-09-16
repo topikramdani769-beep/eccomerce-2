@@ -114,6 +114,26 @@
               />
             </div>
 
+            <!-- TAB PILIHAN KATEGORI -->
+            <div v-if="categories.length > 0" class="category-pills">
+              <button 
+                class="pill-btn" 
+                :class="{ active: selectedCategory === '' }"
+                @click="filterByCategory('')"
+              >
+                ALL
+              </button>
+              <button 
+                v-for="cat in categories" 
+                :key="cat.id" 
+                class="pill-btn"
+                :class="{ active: selectedCategory === cat.id }"
+                @click="filterByCategory(cat.id)"
+              >
+                {{ cat.name?.toUpperCase() }}
+              </button>
+            </div>
+
             <!-- Area Hasil Pencarian -->
             <div class="search-results-container">
               <div v-if="isSearching" class="search-loading">
@@ -130,13 +150,17 @@
                   <img :src="getImageUrl(product.image || product.image_url)" :alt="product.name" class="result-img" />
                   <div class="result-info">
                     <span class="result-name">{{ product.name }}</span>
+                    <!-- Lencana Nama Kategori pada Item Produk -->
+                    <span v-if="product.category?.name" class="result-category">
+                      {{ product.category.name }}
+                    </span>
                     <span class="result-price">Rp {{ Number(product.price).toLocaleString('id-ID') }}</span>
                   </div>
                 </div>
               </div>
 
-              <div v-else-if="searchQuery.trim().length > 1 && !isSearching" class="no-results">
-                Produk tidak ditemukan untuk "{{ searchQuery }}"
+              <div v-else-if="(searchQuery.trim().length > 1 || selectedCategory) && !isSearching" class="no-results">
+                Produk tidak ditemukan
               </div>
             </div>
           </div>
@@ -158,6 +182,9 @@
 
               <div class="modal-info-col">
                 <h2 class="product-title">{{ selectedProduct.name }}</h2>
+                <span v-if="selectedProduct.category?.name" class="modal-category-badge">
+                  {{ selectedProduct.category.name }}
+                </span>
                 <div class="product-price">Rp {{ Number(selectedProduct.price).toLocaleString('id-ID') }}</div>
                 
                 <p class="product-description">
@@ -179,12 +206,22 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick, onMounted } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useAuthStore } from './stores/auth';
 import { useRouter, useRoute } from 'vue-router';
 import api from './services/api';
 
+const authStore = useAuthStore();
+const router = useRouter();
+const route = useRoute();
+
+// Gunakan storeToRefs agar isAuthenticated & user tetap reaktif
+const { isAuthenticated, user } = storeToRefs(authStore);
+
 const searchQuery = ref('');
+const selectedCategory = ref('');
+const categories = ref([]);
 const isSearchOpen = ref(false);
 const isSearching = ref(false);
 const searchResults = ref([]);
@@ -192,19 +229,37 @@ const searchInputRef = ref(null);
 const selectedProduct = ref(null);
 let searchDebounce = null;
 
-const authStore = useAuthStore();
-const router = useRouter();
-const route = useRoute();
-
-const isAuthenticated = computed(() => authStore.isAuthenticated);
-const user = computed(() => authStore.user);
-
 const showNavbar = computed(() => {
   const hiddenRoutes = ['/login', '/register'];
   return !hiddenRoutes.includes(route.path);
 });
 
-// Helper untuk format URL Gambar dari Backend Laravel
+// Ambil daftar kategori dari Backend
+const fetchCategories = async () => {
+  try {
+    const res = await api.get('/categories');
+    categories.value = res.data?.data || res.data || [];
+  } catch (e) {
+    console.error('Gagal mengambil data kategori:', e);
+  }
+};
+
+onMounted(async () => {
+  fetchCategories();
+
+  // CEK STATUS USER: Jika ada token tapi data user kosong, fetch dari backend
+  if (localStorage.getItem('token') && !user.value) {
+    try {
+      if (typeof authStore.fetchUser === 'function') {
+        await authStore.fetchUser();
+      }
+    } catch (e) {
+      console.error('Gagal memuat profil user:', e);
+    }
+  }
+});
+
+// Helper untuk format URL Gambar dari Backend
 const getImageUrl = (imagePath) => {
   if (!imagePath) return 'https://via.placeholder.com/150?text=No+Image';
 
@@ -243,6 +298,7 @@ const openSearch = async () => {
 const closeSearch = () => {
   isSearchOpen.value = false;
   searchQuery.value = '';
+  selectedCategory.value = '';
   searchResults.value = [];
   if (!selectedProduct.value) {
     document.body.style.overflow = '';
@@ -252,7 +308,7 @@ const closeSearch = () => {
 const handleLiveSearch = () => {
   clearTimeout(searchDebounce);
   
-  if (!searchQuery.value.trim()) {
+  if (!searchQuery.value.trim() && !selectedCategory.value) {
     searchResults.value = [];
     isSearching.value = false;
     return;
@@ -261,7 +317,11 @@ const handleLiveSearch = () => {
   isSearching.value = true;
   searchDebounce = setTimeout(async () => {
     try {
-      const res = await api.get(`/products?search=${encodeURIComponent(searchQuery.value.trim())}`);
+      let endpoint = `/products?search=${encodeURIComponent(searchQuery.value.trim())}`;
+      if (selectedCategory.value) {
+        endpoint += `&category_id=${selectedCategory.value}`;
+      }
+      const res = await api.get(endpoint);
       searchResults.value = res.data?.data || res.data || [];
     } catch (e) {
       console.error('Error fetching live search:', e);
@@ -270,6 +330,11 @@ const handleLiveSearch = () => {
       isSearching.value = false;
     }
   }, 300);
+};
+
+const filterByCategory = (catId) => {
+  selectedCategory.value = catId;
+  handleLiveSearch();
 };
 
 const selectProduct = (product) => {
@@ -289,10 +354,66 @@ const addToCart = (product) => {
 };
 
 const handleLogout = async () => {
-  await authStore.logout();
+  if (typeof authStore.logout === 'function') {
+    await authStore.logout();
+  } else {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }
   router.push('/login');
 };
 </script>
+
+<style scoped>
+/* Style Tambahan untuk Kategori pada Drawer Pencarian */
+.category-pills {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 10px 0;
+  margin-bottom: 12px;
+}
+
+.pill-btn {
+  background: #f4f4f4;
+  border: 1px solid #ddd;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.pill-btn.active, .pill-btn:hover {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.result-category {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 800;
+  color: #e62129;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.modal-category-badge {
+  display: inline-block;
+  background: #e62129;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 2px;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+</style>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&family=Oswald:wght@700&display=swap');
