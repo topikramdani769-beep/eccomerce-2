@@ -9,14 +9,17 @@ use App\Events\OrderCreated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Midtrans\Config;
+use Midtrans\Snap;
 
 class OrderController extends Controller
 {
     public function checkout(Request $request)
     {
+        // 1. Ubah validasi: payment_method_id & shipping_address jadi nullable
         $request->validate([
-            'payment_method_id' => 'required|exists:payment_methods,id',
-            'shipping_address'  => 'required|string',
+            'payment_method_id' => 'nullable',
+            'shipping_address'  => 'nullable|string',
         ]);
 
         $user = $request->user();
@@ -35,22 +38,28 @@ class OrderController extends Controller
             }
         }
 
-        // Gunakan Database Transaction agar aman dari error saat pemprosesan
-        $order = DB::transaction(function () use ($user, $request, $carts) {
+        // 2. Set Konfigurasi Midtrans SDK
+        Config::$serverKey = config('services.midtrans.server_key');
+        Config::$isProduction = config('services.midtrans.is_production');
+        Config::$isSanitized = config('services.midtrans.is_sanitized');
+        Config::$is3ds = config('services.midtrans.is_3ds');
+
+        // Gunakan Database Transaction
+        $orderData = DB::transaction(function () use ($user, $request, $carts) {
             // Hitung Total Belanja
             $total = $carts->sum(fn($item) => $item->product->price * $item->quantity);
 
-            // 1. Buat Order
+            // Buat Record Order
             $order = Order::create([
                 'user_id'           => $user->id,
-                'payment_method_id' => $request->payment_method_id,
-                'shipping_address'  => $request->shipping_address,
+                'payment_method_id' => $request->payment_method_id ?? null,
+                'shipping_address'  => $request->shipping_address ?? 'Alamat Default',
                 'order_number'      => 'ORD-' . strtoupper(Str::random(10)),
                 'total_amount'      => $total,
                 'status'            => 'pending'
             ]);
 
-            // 2. Pindahkan item keranjang ke OrderItem & Potong Stok
+            // Pindahkan item keranjang ke OrderItem & Potong Stok
             foreach ($carts as $cart) {
                 OrderItem::create([
                     'order_id'   => $order->id,
@@ -63,28 +72,53 @@ class OrderController extends Controller
                 $cart->product->decrement('stock', $cart->quantity);
             }
 
-            // 3. Kosongkan keranjang user
+            // Kosongkan keranjang user
             Cart::where('user_id', $user->id)->delete();
 
-            return $order;
+            // 3. Susun Payload untuk Midtrans Snap
+            $params = [
+                'transaction_details' => [
+                    'order_id'     => $order->order_number,
+                    'gross_amount' => (int) $total,
+                ],
+                'customer_details' => [
+                    'first_name' => $user->name,
+                    'email'      => $user->email,
+                ]
+            ];
+
+            // 4. Request Snap Token dari Midtrans
+            $snapToken = Snap::getSnapToken($params);
+
+            // Simpan Snap Token ke tabel order (jika kolom snap_token ada)
+            $order->update(['snap_token' => $snapToken]);
+
+            return [
+                'order' => $order,
+                'snap_token' => $snapToken
+            ];
         });
 
-        // 4. Load relasi lengkap (menggunakan 'items' atau 'orderItems' sesuai model)
+        $order = $orderData['order'];
+        $snapToken = $orderData['snap_token'];
+
+        // Load relasi lengkap
         $order->load(['user', 'items.product', 'paymentMethod']);
 
-        // 5. Trigger Broadcast Event ke Admin 🚀
+        // Trigger Broadcast Event ke Admin 🚀
         event(new OrderCreated($order));
 
+        // 5. Kembalikan Response beserta snap_token ke Vue
         return response()->json([
-            'message' => 'Checkout berhasil dibuat',
-            'order'   => $order
+            'message'    => 'Checkout berhasil dibuat',
+            'snap_token' => $snapToken,
+            'order'      => $order
         ], 201);
     }
 
     // Riwayat Order Pengguna
     public function index(Request $request)
     {
-        // Mengubah 'orderItems.product' menjadi 'items.product'
         $orders = Order::with(['items.product', 'paymentMethod'])
             ->where('user_id', $request->user()->id)
             ->latest()
@@ -100,7 +134,6 @@ class OrderController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        // Mengubah 'orderItems.product' menjadi 'items.product'
         return response()->json($order->load(['items.product', 'paymentMethod']), 200);
     }
-}       
+}

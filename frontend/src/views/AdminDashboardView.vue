@@ -54,12 +54,24 @@
             </div>
             <div class="form-group">
               <label>Size</label>
-              <input type="text" v-model="productForm.size" class="form-control" placeholder="e.g. S, M, L, XL / 42" required />
+              <input type="text" v-model="productForm.size" class="form-control" placeholder="e.g. S, M, L, XL / 28, 30" required />
             </div>
           </div>
-          
+
+          <!-- Form Description -->
           <div class="form-group mt-4">
-            <label>Product Images (Multiple files allowed)</label>
+            <label>Product Description</label>
+            <textarea 
+              v-model="productForm.description" 
+              class="form-control" 
+              rows="4" 
+              placeholder="Tuliskan detail bahan, ukuran, atau deskripsi produk..."
+            ></textarea>
+          </div>
+          
+          <!-- Multiple Images File Input -->
+          <div class="form-group mt-4">
+            <label>Product Images (Pilih gambar utama & galeri tambahan sekaligus)</label>
             <input 
               type="file" 
               @change="handleFileUpload" 
@@ -68,10 +80,13 @@
               multiple
               :required="!isEditingProduct"
             />
+            <small v-if="selectedFiles.length" class="text-muted mt-1 display-block">
+              {{ selectedFiles.length }} file dipilih
+            </small>
           </div>
 
-          <button type="submit" class="btn-submit mt-4 w-full">
-            {{ isEditingProduct ? 'UPDATE PRODUCT' : 'SAVE PRODUCT' }}
+          <button type="submit" class="btn-submit mt-4 w-full" :disabled="isSubmitting">
+            {{ isSubmitting ? 'SAVING...' : (isEditingProduct ? 'UPDATE PRODUCT' : 'SAVE PRODUCT') }}
           </button>
         </form>
 
@@ -82,6 +97,7 @@
               <tr>
                 <th>IMAGE</th>
                 <th>NAME</th>
+                <th>DESCRIPTION</th>
                 <th>CATEGORY</th>
                 <th>SIZE</th>
                 <th>PRICE</th>
@@ -93,12 +109,15 @@
               <tr v-for="product in products" :key="product.id">
                 <td>
                   <img 
-                    :src="Array.isArray(product.image) ? product.image[0] : product.image" 
+                    :src="getImageUrl(product)" 
                     class="table-img" 
                     :alt="product.name" 
                   />
                 </td>
                 <td class="font-bold">{{ product.name }}</td>
+                <td class="desc-cell">
+                  {{ product.description || '-' }}
+                </td>
                 <td><span class="badge-cat">{{ product.category?.name || '-' }}</span></td>
                 <td>{{ product.size || '-' }}</td>
                 <td>Rp {{ Number(product.price).toLocaleString('id-ID') }}</td>
@@ -122,7 +141,6 @@
           </button>
         </div>
 
-        <!-- Form Tambah / Edit Kategori -->
         <form v-if="showCategoryForm" @submit.prevent="saveCategory" class="admin-form mt-4">
           <h4>{{ isEditingCategory ? 'EDIT CATEGORY' : 'CREATE NEW CATEGORY' }}</h4>
           <div class="form-group">
@@ -134,7 +152,6 @@
           </button>
         </form>
 
-        <!-- Table Kategori -->
         <div class="table-responsive mt-6">
           <table class="admin-table">
             <thead>
@@ -201,217 +218,146 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, watch } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import api from '../services/api';
 
 const activeTab = ref('products');
-
-// State Produk
-const products = ref([]);
 const showProductForm = ref(false);
 const isEditingProduct = ref(false);
-const editingProductId = ref(null);
+const showCategoryForm = ref(false);
+const isEditingCategory = ref(false);
+const isSubmitting = ref(false);
+
+const products = ref([]);
+const categories = ref([]);
+const orders = ref([]);
 const selectedFiles = ref([]);
 
 const productForm = reactive({
+  id: null,
   name: '',
   category_id: '',
-  price: 0,
-  stock: 10,
-  size: 'M',
-  image: ''
+  price: '',
+  stock: '',
+  size: '',
+  description: ''
 });
 
-// State Kategori
-const categories = ref([]);
-const showCategoryForm = ref(false);
-const isEditingCategory = ref(false);
-const editingCategoryId = ref(null);
 const categoryForm = reactive({
+  id: null,
   name: ''
 });
 
-// State Orders & Timer Polling
-const orders = ref([]);
-let pollInterval = null;
+const handleFileUpload = (e) => {
+  selectedFiles.value = Array.from(e.target.files);
+};
 
-const handleFileUpload = (event) => {
-  selectedFiles.value = Array.from(event.target.files);
+const getImageUrl = (product) => {
+  if (!product.image) return 'https://via.placeholder.com/150';
+  const imgPath = Array.isArray(product.image) ? product.image[0] : product.image;
+  if (imgPath.startsWith('http')) return imgPath;
+  return `http://localhost:8000/storage/${imgPath.replace(/^\//, '')}`;
 };
 
 const toggleForm = (type) => {
   if (type === 'product') {
     showProductForm.value = !showProductForm.value;
     if (!showProductForm.value) resetProductForm();
-  } else if (type === 'category') {
+  } else {
     showCategoryForm.value = !showCategoryForm.value;
     if (!showCategoryForm.value) resetCategoryForm();
   }
 };
 
 const resetProductForm = () => {
-  productForm.name = '';
-  productForm.category_id = categories.value[0]?.id || '';
-  productForm.price = 0;
-  productForm.stock = 10;
-  productForm.size = 'M';
-  productForm.image = '';
-  selectedFiles.value = [];
   isEditingProduct.value = false;
-  editingProductId.value = null;
+  productForm.id = null;
+  productForm.name = '';
+  productForm.category_id = '';
+  productForm.price = '';
+  productForm.stock = '';
+  productForm.size = '';
+  productForm.description = '';
+  selectedFiles.value = [];
 };
 
-const resetCategoryForm = () => {
-  categoryForm.name = '';
-  isEditingCategory.value = false;
-  editingCategoryId.value = null;
+const editProduct = (product) => {
+  isEditingProduct.value = true;
+  showProductForm.value = true;
+  productForm.id = product.id;
+  productForm.name = product.name;
+  productForm.category_id = product.category_id;
+  productForm.price = product.price;
+  productForm.stock = product.stock;
+  productForm.size = product.size;
+  productForm.description = product.description || '';
 };
 
-const fetchProducts = async () => {
-  try {
-    const res = await api.get('/products');
-    products.value = res.data;
-  } catch (e) {
-    console.error('Error fetching products:', e);
-  }
-};
-
-const fetchCategories = async () => {
-  try {
-    const res = await api.get('/categories');
-    categories.value = res.data;
-    if (categories.value.length > 0 && !productForm.category_id) {
-      productForm.category_id = categories.value[0].id;
-    }
-  } catch (e) {
-    console.error('Error fetching categories:', e);
-  }
-};
-
-const fetchOrders = async () => {
-  try {
-    const res = await api.get('/admin/orders');
-    orders.value = res.data;
-  } catch (e) {
-    console.error('Error fetching orders:', e);
-  }
-};
-
-// Manajemen Auto Polling Order
-const startPollingOrders = () => {
-  stopPollingOrders();
-  pollInterval = setInterval(() => {
-    if (activeTab.value === 'orders') {
-      fetchOrders();
-    }
-  }, 5000);
-};
-
-const stopPollingOrders = () => {
-  if (pollInterval) {
-    clearInterval(pollInterval);
-    pollInterval = null;
-  }
-};
-
-// ==========================================
-// PERBAIKAN PADA FUNGSI SAVEPRODUCT DI BAWAH
-// ==========================================
 const saveProduct = async () => {
+  isSubmitting.value = true;
   try {
     const formData = new FormData();
     formData.append('name', productForm.name);
     formData.append('category_id', productForm.category_id);
     formData.append('price', productForm.price);
     formData.append('stock', productForm.stock);
-    formData.append('size', productForm.size);
+    formData.append('size', productForm.size || '');
+    formData.append('description', productForm.description || '');
 
-    // Kirim file ke images[] HANYA JIKA ADA file yang dipilih
-    if (selectedFiles.value && selectedFiles.value.length > 0) {
-      selectedFiles.value.forEach((file) => {
-        formData.append('images[]', file);
-      });
-    }
+    if (selectedFiles.value.length > 0) {
+      // Gambar pertama dikirim sebagai 'image' utama
+      formData.append('image', selectedFiles.value[0]);
 
-    // Deklarasikan Header Multipart secara eksplisit
-    const config = {
-      headers: {
-        'Content-Type': 'multipart/form-data'
+      // Gambar sisanya dikirim sebagai array 'images[]'
+      for (let i = 1; i < selectedFiles.value.length; i++) {
+        formData.append('images[]', selectedFiles.value[i]);
       }
-    };
+    }
 
     if (isEditingProduct.value) {
       formData.append('_method', 'PUT');
-      await api.post(`/admin/products/${editingProductId.value}`, formData, config);
-      alert('Produk berhasil diupdate!');
+      await api.post(`/admin/products/${productForm.id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
     } else {
-      await api.post('/admin/products', formData, config);
-      alert('Produk berhasil ditambahkan!');
+      await api.post('/admin/products', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
     }
 
-    showProductForm.value = false;
-    resetProductForm();
+    alert('Produk berhasil disimpan!');
+    toggleForm('product');
     fetchProducts();
-  } catch (e) {
-    console.error('Detail Error Backend:', e.response?.data);
-    alert(e.response?.data?.message || 'Gagal menyimpan produk');
+  } catch (error) {
+    console.error('Gagal menyimpan produk:', error);
+    alert('Gagal menyimpan produk.');
+  } finally {
+    isSubmitting.value = false;
   }
 };
 
-const editProduct = (product) => {
-  isEditingProduct.value = true;
-  editingProductId.value = product.id;
-  productForm.name = product.name;
-  productForm.category_id = product.category_id;
-  productForm.price = product.price;
-  productForm.stock = product.stock;
-  productForm.size = product.size || 'M';
-  productForm.image = product.image;
-  selectedFiles.value = [];
-  showProductForm.value = true;
-};
-
 const deleteProduct = async (id) => {
-  if (!confirm('Hapus produk ini dari katalog?')) return;
-  try {
-    await api.delete(`/admin/products/${id}`);
-    products.value = products.value.filter(p => p.id !== id);
-  } catch (e) {
-    alert(e.response?.data?.message || 'Gagal menghapus produk');
+  if (confirm('Yakin ingin menghapus produk ini?')) {
+    try {
+      await api.delete(`/admin/products/${id}`);
+      fetchProducts();
+    } catch (e) {
+      console.error(e);
+    }
   }
 };
 
 const saveCategory = async () => {
   try {
     if (isEditingCategory.value) {
-      await api.put(`/admin/categories/${editingCategoryId.value}`, categoryForm);
-      alert('Kategori berhasil diupdate!');
+      await api.put(`/admin/categories/${categoryForm.id}`, categoryForm);
     } else {
       await api.post('/admin/categories', categoryForm);
-      alert('Kategori berhasil ditambahkan!');
     }
-    showCategoryForm.value = false;
-    resetCategoryForm();
+    toggleForm('category');
     fetchCategories();
   } catch (e) {
-    alert(e.response?.data?.message || 'Gagal menyimpan kategori');
-  }
-};
-
-const editCategory = (category) => {
-  isEditingCategory.value = true;
-  editingCategoryId.value = category.id;
-  categoryForm.name = category.name;
-  showCategoryForm.value = true;
-};
-
-const deleteCategory = async (id) => {
-  if (!confirm('Hapus kategori ini?')) return;
-  try {
-    await api.delete(`/admin/categories/${id}`);
-    categories.value = categories.value.filter(c => c.id !== id);
-  } catch (e) {
-    alert(e.response?.data?.message || 'Gagal menghapus kategori');
+    console.error(e);
   }
 };
 
@@ -419,44 +365,32 @@ const updateOrderStatus = async (orderId, newStatus) => {
   try {
     await api.put(`/admin/orders/${orderId}/status`, { status: newStatus });
     alert('Status pesanan berhasil diperbarui!');
-    fetchOrders();
   } catch (e) {
-    alert('Gagal memperbarui status pesanan');
+    console.error('Gagal memperbarui status order:', e);
   }
 };
 
-// Monitor Perubahan Tab
-watch(activeTab, (newTab) => {
-  if (newTab === 'products') {
-    fetchProducts();
-    fetchCategories();
-    stopPollingOrders();
+const fetchProducts = async () => {
+  try {
+    const res = await api.get('/products');
+    products.value = res.data?.data || res.data || [];
+  } catch (e) {
+    console.error(e);
   }
-  if (newTab === 'categories') {
-    fetchCategories();
-    stopPollingOrders();
+};
+
+const fetchCategories = async () => {
+  try {
+    const res = await api.get('/categories');
+    categories.value = res.data?.data || res.data || [];
+  } catch (e) {
+    console.error(e);
   }
-  if (newTab === 'orders') {
-    fetchOrders();
-    startPollingOrders();
-  }
-});
+};
 
 onMounted(() => {
   fetchProducts();
   fetchCategories();
-  fetchOrders();
-
-  if (window.Echo) {
-    window.Echo.channel('admin-orders')
-      .listen('.OrderCreated', (e) => {
-        orders.value.unshift(e.order);
-      });
-  }
-});
-
-onUnmounted(() => {
-  stopPollingOrders();
 });
 </script>
 
@@ -753,6 +687,16 @@ onUnmounted(() => {
   font-weight: 800;
   letter-spacing: 1px;
   border-radius: 2px;
+}
+
+.desc-cell {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #222;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .status-tag.pending { background: #f59e0b; color: #ffffff; }

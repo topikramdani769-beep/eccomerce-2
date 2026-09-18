@@ -11,7 +11,7 @@ class ProductController extends Controller
     // Fetch Produk dengan Filter & Search
     public function index(Request $request)
     {
-        $query = Product::with('category');
+        $query = Product::with(['category', 'images']);
 
         if ($request->has('search') && $request->search != '') {
             $query->where('name', 'like', '%' . $request->search . '%');
@@ -36,28 +36,34 @@ class ProductController extends Controller
             'stock'       => 'required|integer|min:0',
             'size'        => 'nullable|string',
             'description' => 'nullable|string',
-            'images'      => 'nullable|array', // Harus ada deklarasi array untuk induknya
+            'image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'images'      => 'nullable|array',
             'images.*'    => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'image'       => 'nullable',
         ]);
 
-        // Fleksibel: Deteksi file baik dari 'images' (array Vue) maupun 'image' (single)
-        $file = null;
-        if ($request->hasFile('images')) {
-            $file = $request->file('images')[0];
-        } elseif ($request->hasFile('image')) {
-            $file = $request->file('image');
-        }
-
-        if ($file) {
-            $path = $file->store('products', 'public');
+        // 1. Simpan Gambar Utama (Main Image)
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('products', 'public');
             $validated['image'] = url('storage/' . $path);
         }
 
-        // Clean up array images dari payload agar tidak masuk ke mass-assignment Eloquent jika kolomnya tidak ada
         unset($validated['images']);
 
+        // Buat Produk Baru
         $product = Product::create($validated);
+
+        // 2. Simpan Gambar Tambahan (Galeri) ke tabel relasi product_images
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $extraPath = $file->store('products', 'public');
+                $product->images()->create([
+                    'image_path' => url('storage/' . $extraPath)
+                ]);
+            }
+        }
+
+        // Load kembali dengan relasi gambar
+        $product->load('images');
 
         return response()->json([
             'message' => 'Produk berhasil ditambahkan',
@@ -65,9 +71,11 @@ class ProductController extends Controller
         ], 201);
     }
 
+    // Tampilkan Detail Produk
     public function show($id)
     {
-        $product = Product::with('category')->findOrFail($id);
+        // Wajib menyertakan ->with('images') agar galeri ikut terkirim ke Vue
+        $product = Product::with(['category', 'images'])->findOrFail($id);
         return response()->json($product, 200);
     }
 
@@ -83,33 +91,36 @@ class ProductController extends Controller
             'stock'       => 'sometimes|integer|min:0',
             'size'        => 'nullable|string',
             'description' => 'nullable|string',
-            'images'      => 'nullable|array', // Deklarasi tipe array
+            'image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'images'      => 'nullable|array',
             'images.*'    => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'image'       => 'nullable',
         ]);
 
-        // Fleksibel: Deteksi file baru yang diunggah
-        $file = null;
-        if ($request->hasFile('images')) {
-            $file = $request->file('images')[0];
-        } elseif ($request->hasFile('image')) {
-            $file = $request->file('image');
-        }
-
-        if ($file) {
-            // Hapus gambar lama jika tersimpan di local storage
+        // Update Gambar Utama jika ada file baru
+        if ($request->hasFile('image')) {
             if ($product->image && str_contains($product->image, 'storage/products/')) {
                 $oldPath = str_replace(url('storage/'), '', $product->image);
                 Storage::disk('public')->delete($oldPath);
             }
 
-            $path = $file->store('products', 'public');
+            $path = $request->file('image')->store('products', 'public');
             $validated['image'] = url('storage/' . $path);
         }
 
         unset($validated['images']);
-
         $product->update($validated);
+
+        // Jika ada tambahan gambar galeri baru saat update
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $extraPath = $file->store('products', 'public');
+                $product->images()->create([
+                    'image_path' => url('storage/' . $extraPath)
+                ]);
+            }
+        }
+
+        $product->load('images');
 
         return response()->json([
             'message' => 'Produk berhasil diperbarui',
@@ -120,11 +131,21 @@ class ProductController extends Controller
     // Hapus Produk
     public function destroy($id)
     {
-        $product = Product::findOrFail($id);
+        $product = Product::with('images')->findOrFail($id);
 
+        // Hapus gambar utama fisik
         if ($product->image && str_contains($product->image, 'storage/products/')) {
             $oldPath = str_replace(url('storage/'), '', $product->image);
             Storage::disk('public')->delete($oldPath);
+        }
+
+        // Hapus file gambar galeri fisik dan data relasinya
+        foreach ($product->images as $img) {
+            if ($img->image_path && str_contains($img->image_path, 'storage/products/')) {
+                $oldExtraPath = str_replace(url('storage/'), '', $img->image_path);
+                Storage::disk('public')->delete($oldExtraPath);
+            }
+            $img->delete();
         }
 
         $product->delete();

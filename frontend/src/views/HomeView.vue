@@ -1,6 +1,6 @@
 <template>
   <div class="delarache-catalog">
-    <!-- Hero Banner dengan Background Video Lokal -->
+    <!-- Hero Banner -->
     <section class="hero-banner">
       <video 
         ref="heroVideo"
@@ -21,7 +21,7 @@
         <h1 class="main-title">DE LARACHE<br>SIGNATURE</h1>
         <button class="btn-buy-now">BELI SEKARANG</button>
 
-        <!-- Tombol Toggle Suara Video -->
+        <!-- Toggle Suara -->
         <button 
           @click="toggleMute" 
           class="btn-sound-toggle" 
@@ -58,7 +58,7 @@
           v-for="product in filteredProducts" 
           :key="product.id" 
           class="product-card"
-          @click="openModal(product)"
+          @click="$router.push(`/product/${product.id}`)"
         >
           <div class="image-wrapper">
             <img :src="getImageUrl(product.image)" :alt="product.name" />
@@ -80,8 +80,9 @@
                 </span>
               </div>
               
+              <!-- Tombol Cepat Tambah ke Cart -->
               <button 
-                @click.stop="addToCart(product.id)" 
+                @click.stop="handleQuickAddToCart(product)" 
                 class="btn-cart"
                 :disabled="product.stock <= 0"
               >
@@ -96,196 +97,93 @@
         <p>PRODUK TIDAK DITEMUKAN</p>
       </div>
     </div>
-
-    <!-- Modal Detail Produk -->
-    <Transition name="fade">
-      <div v-if="selectedProduct" class="modal-overlay" @click.self="closeModal">
-        <div class="modal-content-bape">
-          <button class="close-btn" @click="closeModal">&times;</button>
-          
-          <div class="modal-body-bape">
-            <!-- Sisi Kiri: Gambar Utama -->
-            <div class="main-image-container">
-              <img :src="activeImage || getImageUrl(selectedProduct.image)" :alt="selectedProduct.name" />
-            </div>
-            
-            <!-- Sisi Kanan: Informasi Produk -->
-            <div class="product-info-container">
-              <h1 class="bape-title">{{ selectedProduct.name }}</h1>
-              <div class="bape-price">
-                Rp {{ Number(selectedProduct.price).toLocaleString('id-ID') }},00
-              </div>
-
-              <!-- Color / Variant Thumbnails Galeri -->
-              <div v-if="productImages.length > 0" class="color-thumbnails">
-                <div 
-                  v-for="(img, idx) in productImages" 
-                  :key="idx"
-                  class="thumb-box"
-                  :class="{ 'active': activeImage === img }"
-                  @click="activeImage = img"
-                >
-                  <img :src="img" alt="Variant thumbnail" />
-                </div>
-              </div>
-
-              <!-- Size Selector Box Grid -->
-              <div class="size-section">
-                <label class="size-label">SIZE</label>
-                <div class="size-grid">
-                  <button 
-                    v-for="sizeOption in availableSizes" 
-                    :key="sizeOption"
-                    class="size-box"
-                    :class="{ 'active': selectedSize === sizeOption }"
-                    @click="selectedSize = sizeOption"
-                  >
-                    {{ sizeOption }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- Main Action Button -->
-              <button 
-                @click="addToCart(selectedProduct.id)" 
-                class="btn-select-size"
-                :disabled="selectedProduct.stock <= 0"
-              >
-                {{ selectedProduct.stock > 0 ? (selectedSize ? `TAMBAH KE KERANJANG (${selectedSize})` : 'PILIH UKURAN') : 'STOK HABIS' }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Transition>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useCartStore } from '../stores/cart';
 import api from '../services/api';
-import { useAuthStore } from '../stores/auth';
-import { useRouter, useRoute } from 'vue-router';
 
+const cartStore = useCartStore();
+
+// State dasar
+const loading = ref(false);
 const products = ref([]);
-const loading = ref(true);
-const selectedProduct = ref(null);
-const activeImage = ref('');
-const selectedSize = ref('M');
-const availableSizes = ref(['S', 'M', 'L', 'XL', 'XXL']);
-
+const currentSearchQuery = ref('');
+const isMuted = ref(true);
 const heroVideo = ref(null);
-const isMuted = ref(true); // Default muted agar diizinkan autoplay oleh browser
 
-const authStore = useAuthStore();
-const router = useRouter();
-const route = useRoute();
+// Helper untuk menentukan ukuran dinamis berdasarkan kategori produk
+const getSizesForProduct = (product) => {
+  if (!product) return [];
 
-// Toggle Suara Video
-const toggleMute = () => {
-  isMuted.value = !isMuted.value;
-  if (heroVideo.value) {
-    heroVideo.value.muted = isMuted.value;
+  const categoryName = (product.category?.name || product.category || '').toLowerCase();
+
+  // 1. Kategori Celana / Pants / Bottoms
+  if (categoryName.includes('pant') || categoryName.includes('celana') || categoryName.includes('jeans') || categoryName.includes('short')) {
+    return ['28', '30', '32', '34', '36'];
   }
-};
 
-const playVideo = () => {
-  if (heroVideo.value) {
-    heroVideo.value.muted = isMuted.value;
-    heroVideo.value.play().catch((err) => {
-      console.warn('Autoplay video terhalang kebijakan browser:', err);
-    });
+  // 2. Kategori Baju / Tops / Outerwear
+  if (
+    categoryName.includes('shirt') || 
+    categoryName.includes('baju') || 
+    categoryName.includes('tee') || 
+    categoryName.includes('hoodie') ||
+    categoryName.includes('jacket') ||
+    categoryName.includes('sweater')
+  ) {
+    return ['S', 'M', 'L', 'XL', 'XXL'];
   }
-};
 
-const currentSearchQuery = computed(() => route.query.search || '');
+  // 3. Default Aksesori
+  return ['ALL SIZE'];
+};
 
 const filteredProducts = computed(() => {
   if (!currentSearchQuery.value) return products.value;
-  const query = currentSearchQuery.value.toLowerCase();
-  return products.value.filter(product => 
-    product.name.toLowerCase().includes(query) ||
-    (product.description && product.description.toLowerCase().includes(query))
+  return products.value.filter(p => 
+    p.name.toLowerCase().includes(currentSearchQuery.value.toLowerCase())
   );
 });
 
-const productImages = computed(() => {
-  if (!selectedProduct.value) return [];
-  
-  if (Array.isArray(selectedProduct.value.images) && selectedProduct.value.images.length > 0) {
-    return selectedProduct.value.images.map(img => typeof img === 'object' ? getImageUrl(img.image_path) : getImageUrl(img));
+const playVideo = () => {
+  if (heroVideo.value) {
+    heroVideo.value.play().catch(e => console.log('Autoplay blocked:', e));
   }
-  
-  return [getImageUrl(selectedProduct.value.image)];
-});
-
-const getImageUrl = (imagePath) => {
-  if (!imagePath) return 'https://via.placeholder.com/300x300?text=No+Image';
-
-  if (typeof imagePath === 'string' && imagePath.startsWith('[')) {
-    try {
-      const parsed = JSON.parse(imagePath);
-      imagePath = parsed[0] || '';
-    } catch (e) {
-      console.error('Gagal parse path gambar:', e);
-    }
-  }
-
-  if (typeof imagePath === 'string' && (imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
-    return imagePath;
-  }
-
-  const baseUrl = 'http://localhost:8000';
-  let cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-  if (cleanPath.startsWith('/storage/')) {
-    cleanPath = cleanPath.replace('/storage/', '/');
-  }
-
-  return `${baseUrl}/storage${cleanPath}`;
 };
 
-const fetchProducts = async () => {
+const toggleMute = () => {
+  isMuted.value = !isMuted.value;
+};
+
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return 'https://via.placeholder.com/300';
+  if (imagePath.startsWith('http')) return imagePath;
+  return `http://localhost:8000/storage/${imagePath.replace(/^\//, '')}`;
+};
+
+// Quick Add dari Grid Katalog Utama (Otomatis memilih ukuran pertama yang valid)
+const handleQuickAddToCart = (product) => {
+  const dynamicSizes = getSizesForProduct(product);
+  const itemToAdd = {
+    ...product,
+    selectedSize: dynamicSizes[0] || 'ALL SIZE'
+  };
+  cartStore.addToCart(itemToAdd);
+};
+
+onMounted(async () => {
+  loading.value = true;
   try {
-    const response = await api.get('/products');
-    products.value = response.data;
-  } catch (error) {
-    console.error('Error loading products:', error);
+    const res = await api.get('/products');
+    products.value = res.data?.data || res.data || [];
+  } catch (e) {
+    console.error('Gagal mengambil produk:', e);
   } finally {
     loading.value = false;
   }
-};
-
-const openModal = (product) => {
-  selectedProduct.value = product;
-  selectedSize.value = product.size || 'M';
-  activeImage.value = getImageUrl(product.image);
-};
-
-const closeModal = () => {
-  selectedProduct.value = null;
-};
-
-const addToCart = async (productId) => {
-  if (!authStore.isAuthenticated) {
-    alert('Silakan login terlebih dahulu!');
-    return router.push('/login');
-  }
-
-  try {
-    await api.post('/cart', { 
-      product_id: productId, 
-      quantity: 1,
-      size: selectedSize.value 
-    });
-    alert('Produk berhasil ditambahkan ke keranjang!');
-  } catch (error) {
-    alert(error.response?.data?.message || 'Gagal menambahkan ke keranjang');
-  }
-};
-
-onMounted(() => {
-  fetchProducts();
-  playVideo();
 });
 </script>
 
@@ -542,184 +440,6 @@ onMounted(() => {
   color: #888888;
 }
 
-/* Modal Styling Minimalis Clean White */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-}
-
-.modal-content-bape {
-  background: #ffffff;
-  color: #000000;
-  width: 90%;
-  max-width: 900px;
-  padding: 40px;
-  position: relative;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
-}
-
-.close-btn {
-  position: absolute;
-  top: 15px;
-  right: 20px;
-  border: none;
-  background: transparent;
-  font-size: 28px;
-  cursor: pointer;
-  color: #000000;
-}
-
-.modal-body-bape {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 40px;
-  align-items: center;
-}
-
-@media (max-width: 768px) {
-  .modal-body-bape {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-}
-
-.main-image-container {
-  width: 100%;
-  height: 380px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #fafafa;
-}
-
-.main-image-container img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.product-info-container {
-  display: flex;
-  flex-direction: column;
-}
-
-.bape-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: #000000;
-  margin-bottom: 8px;
-  line-height: 1.3;
-}
-
-.bape-price {
-  font-size: 16px;
-  font-weight: 600;
-  color: #111111;
-  margin-bottom: 24px;
-}
-
-.color-thumbnails {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.thumb-box {
-  width: 60px;
-  height: 60px;
-  border: 1px solid #e5e5e5;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.thumb-box.active, .thumb-box:hover {
-  border: 2px solid #000000;
-}
-
-.thumb-box img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.size-section {
-  margin-bottom: 30px;
-}
-
-.size-label {
-  display: block;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  margin-bottom: 10px;
-  color: #000000;
-}
-
-.size-grid {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.size-box {
-  width: 48px;
-  height: 48px;
-  background: #ffffff;
-  border: 1px solid #e5e5e5;
-  color: #000000;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.size-box:hover {
-  border-color: #a3a3a3;
-}
-
-.size-box.active {
-  border: 2px solid #000000;
-  font-weight: 800;
-}
-
-.btn-select-size {
-  width: 100%;
-  background: #000000;
-  color: #ffffff;
-  border: none;
-  padding: 16px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-
-.btn-select-size:hover:not(:disabled) {
-  background: #222222;
-}
-
-.btn-select-size:disabled {
-  background: #cccccc;
-  cursor: not-allowed;
-}
-
 /* Loading Spinner */
 .state-msg {
   text-align: center;
@@ -740,7 +460,4 @@ onMounted(() => {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
-
-.fade-enter-active, .fade-leave-active { transition: opacity 0.25s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

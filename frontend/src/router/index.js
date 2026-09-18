@@ -6,6 +6,7 @@ import CartView from '../views/CartView.vue';
 import CheckoutView from '../views/CheckoutView.vue';
 import OrdersView from '../views/OrdersView.vue';
 import AdminDashboardView from '../views/AdminDashboardView.vue';
+import ProductDetailView from '../views/ProductDetailView.vue'; // 1. Import Komponen Detail Produk
 import { useAuthStore } from '../stores/auth';
 
 const routes = [
@@ -14,6 +15,12 @@ const routes = [
     name: 'Home', 
     component: HomeView,
     meta: { title: 'DE LARACHE - Official Store' }
+  },
+  { 
+    path: '/product/:id', // 2. Tambahkan Rute Detail Produk dengan Dinamis ID
+    name: 'ProductDetail', 
+    component: ProductDetailView,
+    meta: { title: 'Product Detail - DE LARACHE' }
   },
   { 
     path: '/login', 

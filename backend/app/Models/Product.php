@@ -37,10 +37,8 @@ class Product extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
-
-    // Relasi: Produk bisa ada di banyak wishlist user
-    public function wishlists()
-    {
-        return $this->hasMany(Wishlist::class);
-    }
+    public function images()
+{
+    return $this->hasMany(ProductImage::class);
+}
 }

@@ -11,6 +11,7 @@ use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\AdminStatsController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Api\MidtransCallbackController; // 1. Import Controller Midtrans
 
 // Public Routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -23,6 +24,9 @@ Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
 
 Route::get('/payment-methods', [PaymentMethodController::class, 'index']);
+
+// 2. Webhook Midtrans (Wajib Public / Di Luar Auth Middleware)
+Route::post('/midtrans-callback', [MidtransCallbackController::class, 'handle']);
 
 // Protected Routes (Semua User yang Login)
 Route::middleware('auth:sanctum')->group(function () {
@@ -57,7 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/categories/{category}', [CategoryController::class, 'update']);
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
 
-        // Products Management (Dibuat match agar menerima POST, PUT, dan PATCH)
+        // Products Management
         Route::post('/products', [ProductController::class, 'store']);
         Route::match(['post', 'put', 'patch'], '/products/{product}', [ProductController::class, 'update']);
         Route::delete('/products/{product}', [ProductController::class, 'destroy']);

@@ -9,7 +9,7 @@
       </div>
 
       <form v-else @submit.prevent="handleCheckout" class="checkout-layout">
-        <!-- Shipping & Payment Form -->
+        <!-- Shipping Address Form -->
         <div class="checkout-form">
           <div class="section-box">
             <h3 class="section-title">SHIPPING ADDRESS</h3>
@@ -22,34 +22,6 @@
                 placeholder="Jl. Sudirman No. 12, Jakarta Selatan, 12190"
                 required
               ></textarea>
-            </div>
-          </div>
-
-          <div class="section-box mt-6">
-            <h3 class="section-title">PAYMENT METHOD</h3>
-            
-            <div v-if="paymentMethods.length === 0" class="empty-payment-msg mt-4">
-              <p>Tidak ada metode pembayaran yang tersedia.</p>
-            </div>
-
-            <div v-else class="payment-options mt-4">
-              <label 
-                v-for="method in paymentMethods" 
-                :key="method.id" 
-                :class="['payment-card', { active: selectedPayment === method.id }]"
-              >
-                <input 
-                  type="radio" 
-                  :value="method.id" 
-                  v-model="selectedPayment" 
-                  name="payment_method"
-                  required 
-                />
-                <div class="payment-info">
-                  <strong>{{ method.name }}</strong>
-                  <small v-if="method.account_number">{{ method.account_number }} (a.n {{ method.account_holder }})</small>
-                </div>
-              </label>
             </div>
           </div>
         </div>
@@ -76,8 +48,8 @@
             <span class="total-price">Rp {{ totalPrice.toLocaleString('id-ID') }}</span>
           </div>
 
-          <button type="submit" class="btn-submit btn-place-order" :disabled="submitting || paymentMethods.length === 0">
-            <span v-if="!submitting">PLACE ORDER</span>
+          <button type="submit" class="btn-submit btn-place-order" :disabled="submitting">
+            <span v-if="!submitting">PAY WITH MIDTRANS</span>
             <span v-else class="loader-container">
               <span class="spinner-sm"></span> PROCESSING...
             </span>
@@ -94,22 +66,30 @@ import api from '../services/api';
 import { useRouter } from 'vue-router';
 
 const cartItems = ref([]);
-const paymentMethods = ref([]);
 const address = ref('');
-const selectedPayment = ref(null);
 const loading = ref(true);
 const submitting = ref(false);
 const router = useRouter();
 
+// 1. Load Midtrans Snap Script dynamically or ensure it's in index.html
+const loadMidtransScript = () => {
+  return new Promise((resolve) => {
+    if (window.snap) {
+      return resolve(true);
+    }
+    const clientKey = "GANTI_DENGAN_MIDTRANS_CLIENT_KEY_ANDA"; // Atau ambil dari backend/env
+    const script = document.createElement('script');
+    script.src = "https://app.sandbox.midtrans.com/snap/snap.js"; // Ubah ke app.midtrans.com untuk production
+    script.setAttribute('data-client-key', clientKey);
+    script.onload = () => resolve(true);
+    document.body.appendChild(script);
+  });
+};
+
 const fetchData = async () => {
   loading.value = true;
   try {
-    const [cartRes, paymentRes] = await Promise.all([
-      api.get('/cart'),
-      api.get('/payment-methods')
-    ]);
-
-    // Fleksibel menangani berbagai bentuk payload JSON dari Backend
+    const cartRes = await api.get('/cart');
     const rawCartData = cartRes.data;
     let extractedCart = [];
 
@@ -123,14 +103,7 @@ const fetchData = async () => {
       extractedCart = rawCartData.items;
     }
 
-    const rawPayment = paymentRes.data?.data || paymentRes.data || [];
-
     cartItems.value = extractedCart;
-    paymentMethods.value = Array.isArray(rawPayment) ? rawPayment : [];
-
-    if (paymentMethods.value.length > 0) {
-      selectedPayment.value = paymentMethods.value[0].id;
-    }
   } catch (e) {
     console.error('Error loading checkout:', e);
   } finally {
@@ -147,27 +120,51 @@ const handleCheckout = async () => {
     return alert('Keranjang belanja kamu kosong!');
   }
 
-  if (!selectedPayment.value) {
-    return alert('Silakan pilih metode pembayaran terlebih dahulu!');
-  }
-
   submitting.value = true;
   try {
-    await api.post('/orders', {
+    // 2. Request Snap Token ke Backend Anda yang sudah terhubung Midtrans
+    const response = await api.post('/orders', {
       shipping_address: address.value,
-      address: address.value,
-      payment_method_id: selectedPayment.value
+      address: address.value
     });
-    alert('Pesanan berhasil dibuat!');
-    router.push('/orders');
+
+    // Asumsi backend mengembalikan token snap (misal: response.data.snap_token atau response.data.token)
+    const snapToken = response.data.snap_token || response.data.token;
+
+    if (!snapToken) {
+      throw new Error('Snap token tidak ditemukan dari server.');
+    }
+
+    // 3. Panggil Midtrans Snap Popup
+    window.snap.pay(snapToken, {
+      onSuccess: function (result) {
+        alert("Pembayaran berhasil!");
+        console.log(result);
+        router.push('/orders');
+      },
+      onPending: function (result) {
+        alert("Menunggu pembayaran selesai.");
+        console.log(result);
+        router.push('/orders');
+      },
+      onError: function (result) {
+        alert("Pembayaran gagal!");
+        console.log(result);
+      },
+      onClose: function () {
+        alert('Anda menutup popup pembayaran sebelum menyelesaikannya.');
+      }
+    });
+
   } catch (e) {
-    alert(e.response?.data?.message || 'Gagal membuat pesanan');
+    alert(e.response?.data?.message || e.message || 'Gagal membuat pesanan');
   } finally {
     submitting.value = false;
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
+  await loadMidtransScript();
   fetchData();
 });
 </script>

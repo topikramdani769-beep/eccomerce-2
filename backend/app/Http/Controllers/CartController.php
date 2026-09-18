@@ -20,18 +20,34 @@ class CartController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'quantity'   => 'required|integer|min:1'
+            'quantity'   => 'required|integer|min:1',
+            'size'       => 'nullable|string'
         ]);
 
-        $cart = Cart::updateOrCreate(
-            [
-                'user_id'    => $request->user()->id,
-                'product_id' => $request->product_id
-            ],
-            [
-                'quantity'   => $request->quantity
-            ]
-        );
+        $userId = $request->user()->id;
+        $productId = $request->product_id;
+        $size = $request->size;
+        $quantity = $request->quantity;
+
+        // Cek apakah item dengan produk dan ukuran yang sama sudah ada di keranjang user
+        $cart = Cart::where('user_id', $userId)
+            ->where('product_id', $productId)
+            ->where('size', $size)
+            ->first();
+
+        if ($cart) {
+            // Jika sudah ada, tambahkan quantity-nya
+            $cart->quantity += $quantity;
+            $cart->save();
+        } else {
+            // Jika belum ada, buat baru
+            $cart = Cart::create([
+                'user_id'    => $userId,
+                'product_id' => $productId,
+                'size'       => $size,
+                'quantity'   => $quantity
+            ]);
+        }
 
         return response()->json([
             'message' => 'Item berhasil dimasukkan ke keranjang',
